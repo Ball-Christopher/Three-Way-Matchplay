@@ -5,13 +5,8 @@ from operator import itemgetter
 import pdfkit
 
 from Bowler import *
+from Utilities import WriteHTML, WritePreambleHTML, custom_strftime
 
-
-def suffix(d):
-    return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
-
-def custom_strftime(format, t):
-    return t.strftime(format).replace('{S}', str(t.day) + suffix(t.day))
 '''
 Author: Christopher Ball
 Date Created: 24/01/2016
@@ -221,32 +216,34 @@ class League:
             g = open(gfile, 'w')
             h = open(hfile, 'w')
         #Write header to document if appropriate
-        self.WritePreambleHTML(g, week, Full = False)
-        self.WritePreambleHTML(h, week, Full = False)
+        WritePreambleHTML(g, week, Full=False, Leaguename=self.Leaguename,
+                          BCenter=self.BCenter, dates=self.dates, lanes=self.lanes)
+        WritePreambleHTML(h, week, Full=False, Leaguename=self.Leaguename,
+                          BCenter=self.BCenter, dates=self.dates, lanes=self.lanes)
         #Write end of document if appropriate
         h.write('<h2 id="Standings-Scratch">Standings Scratch</h2>\n')
-        self.WriteHTML(h, Scratch, self.StScP, cls = 'standtable')
+        WriteHTML(h, Scratch, self.StScP, cls='standtable')
         g.write('<h2 id="Standings-Handicap">Standings Handicap</h2>\n')
-        self.WriteHTML(g, Handicap, self.StHcP, cls = 'standtable')
+        WriteHTML(g, Handicap, self.StHcP, cls='standtable')
         # g.write('<h2  id="Schedule-by-id">Schedule by ID</h2>\n')
         # self.WriteHTML(g, SchedDataNum, self.SchedNumP, cls = 'idtable')
         # h.write('<h2  id="Schedule-by-id">Schedule by ID</h2>\n')
         # self.WriteHTML(h, SchedDataNum, self.SchedNumP, cls = 'idtable')
         if self.byname:
             g.write('<h2  id="Schedule-by-name">Schedule by Name</h2>\n')
-            self.WriteHTML(g, SchedDataNam, self.SchedNamP, cls = 'boldtable')
+            WriteHTML(g, SchedDataNam, self.SchedNamP, cls='boldtable')
             h.write('<h2  id="Schedule-by-name">Schedule by Name</h2>\n')
-            self.WriteHTML(h, SchedDataNam, self.SchedNamP, cls = 'boldtable')
+            WriteHTML(h, SchedDataNam, self.SchedNamP, cls='boldtable')
         if self.handicap:
             g.write('<h2 id="LWHS">Last Week\'s Individual High Scores</h2>\n')
-            self.WriteHTML(g, IDataHG, self.High, cls = 'idtable')
+            WriteHTML(g, IDataHG, self.High, cls='idtable')
             g.write('<h2 id="SHS">Season Individual High Scores</h2>\n')
-            self.WriteHTML(g, IDataHS, self.High, cls = 'idtable')
+            WriteHTML(g, IDataHS, self.High, cls='idtable')
         if self.scratch:
             h.write('<h2 id="LWSS">Last Week\'s Individual High Scores</h2>\n')
-            self.WriteHTML(h, IDataSG, self.High, cls = 'idtable')
+            WriteHTML(h, IDataSG, self.High, cls='idtable')
             h.write('<h2 id="SSS">Season Individual High Scores</h2>\n')
-            self.WriteHTML(h, IDataSS, self.High, cls = 'idtable')
+            WriteHTML(h, IDataSS, self.High, cls='idtable')
             pass
         g.write('<div style="page-break-inside:avoid;">')
         h.write('<div style="page-break-inside:avoid;">')
@@ -257,10 +254,10 @@ class League:
         # Some basic cleaning before HTML processing
         BowlersH = [row for row in BowlersDataHandicap if len(row) > 1]
         for i,row in enumerate(BowlersH): row.insert(0, '' if i % 3 != 0 else '{0}--{1}'.format(2*(i//3)+1, 2*(i//3+1)))
-        self.WriteHTML(g, BowlersH, self.WRecapH, cls = 'maintable')
+        WriteHTML(g, BowlersH, self.WRecapH, cls='maintable')
         BowlersS = [row for row in BowlersDataScratch if len(row) > 1]
         for i,row in enumerate(BowlersS): row.insert(0, '' if i % 3 != 0 else '{0}--{1}'.format(2*(i//3)+1, 2*(i//3+1)))
-        self.WriteHTML(h, BowlersS, self.WRecap, cls = 'maintable')
+        WriteHTML(h, BowlersS, self.WRecap, cls='maintable')
         g.write('</div>')
         h.write('</div>')
         h.write('</div>\n</div>\n</div>\n</body>\n</html>')
@@ -286,13 +283,14 @@ class League:
     def CompleteSchedule(self):
         gfile = os.getcwd()+r'\HTML\Schedule.html'
         g = open(gfile, 'w')
-        self.WritePreambleHTML(g, 1, Full = False)
+        WritePreambleHTML(g, 1, Full=False, Leaguename=self.Leaguename,
+                          BCenter=self.BCenter, dates=self.dates, lanes=self.lanes)
         SchedDataNum = [self.SchedulePrint(week, 'Num')[0] for week in range(1, self.weeklen + 1)]
         SchedDataNam = [self.SchedulePrint(week, 'Name')[0] for week in range(1, self.weeklen + 1)]
         g.write('<h2  id="Schedule-by-id">Schedule by ID</h2>\n')
-        self.WriteHTML(g, SchedDataNum, self.SchedNumP, cls = 'idtable')
+        WriteHTML(g, SchedDataNum, self.SchedNumP, cls='idtable')
         g.write('<h2  id="Schedule-by-name">Schedule by Name</h2>\n')
-        self.WriteHTML(g, SchedDataNam, self.SchedNamP, cls = 'boldtable')
+        WriteHTML(g, SchedDataNam, self.SchedNamP, cls='boldtable')
         g.write('</div>\n</div>\n</div>\n</body>\n</html>')
         g.close()
         # Configure the html to pdf software.
@@ -344,118 +342,6 @@ class League:
                     SchedData[Count].extend(['--'.join(str(j) for j in CurrentWeek[i:(i + self.Pattern[week - 1])])])
                 LaneCount += 2
         return(SchedData)
-
-    def WriteHTML(self, g, Data, TableParam, cls = 'u-full-width'):
-        TableHead = TableParam['Names']
-        if cls == 'maintable':
-            g.write('<table class="{0}" rules="groups" frame="hsides">\n<thead>\n'.format(cls))
-        else:
-            g.write('<table class="{0}">\n<thead>\n'.format(cls))
-        for el in TableHead:
-            g.write('<th>{0}</th>'.format(el))
-        g.write('\n')
-        g.write('</thead>\n<tbody>\n')
-        Count = 0
-        for row in Data:
-            if cls == 'maintable' and Count % 3 == 0 and Count > 0:
-                g.write('</tbody>\n<tbody>\n')
-            if len(row) == 1: continue
-            Count += 1
-            g.write('<tr>\n')
-            for el, al in zip(row, TableParam['TParams']):
-                if al == 'r':
-                    Align = 'style="text-align:right"'
-                elif al == 'r':
-                    Align = 'style="text-align:left"'
-                elif al[0] == 'p':
-                    Align = 'style="text-align:left"'
-                else:
-                    Align = ''
-                el = str(el)
-                if el.count(r'\bf') > 0:
-                    Bold = True
-                    el = el.replace(r'\bf','')
-                else:
-                    Bold = False
-                if el.count(r'\it') > 0:
-                    Italic = True
-                    el = el.replace(r'\it','')
-                else:
-                    Italic = False
-                if el.count(r'\textcolor{red}{') > 0:
-                    Red = True
-                    el = el.replace(r'\textcolor{red}{','')
-                else:
-                    Red = False
-                for Con in ('{','}'):
-                    el = el.replace(Con,'')
-                if Bold:
-                    g.write('<td style="font-weight:bold" {1}>{0}</td>'.format(el, Align))
-                elif Italic:
-                    g.write('<td style="text-decoration: underline" {1}>{0}</td>'.format(el, Align))
-                elif Red:
-                    g.write('<td style="color:red" {1}>{0}</td>'.format(el, Align))
-                else:
-                    g.write('<td {1}>{0}</td>'.format(el, Align))
-            g.write('</tr>\n')
-        g.write('</tbody>\n</table>\n')
-
-    def WritePreambleHTML(self, g, week, Full=True, Script=False):
-        g.write('<!DOCTYPE html>\n<html lang="en">\n')
-        g.write('<header>\n')
-        g.write('<table style="border-bottom:1pt solid black; width: 100%;">\n')
-        if type(week) == int:
-            g.write(
-                '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> <h4> {1} </h4> </td> <td style="width:20%"> Week {2} </td> </tr>\n'.format(
-                    custom_strftime('{S} of %B, %Y', self.dates[week - 1]), self.Leaguename, week))
-        else:
-            g.write(
-                '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> <h4> {1} </h4> </td> <td style="width:20%"> {2} </td> </tr>\n'.format(
-                    "", self.Leaguename, ""))
-        g.write('</table>\n<table style="width: 100%;">\n')
-        g.write('<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> {1} </td> <td style="width:20%"> Lanes 1 -- {2} </td> </tr>\n'.format(
-            self.dates[0].strftime('6:45pm %A'), self.BCenter, self.lanes))
-        g.write('</table></header>')
-        g.write('<head>\n<meta charset="utf-8">\n')
-        g.write('<title>{1} Week {0} Recap</title>'.format(week, self.Leaguename))
-        g.write('<meta name="description" content="">\n<meta name="author" content="">\n')
-        g.write('<meta name="viewport" content="width=device-width, initial-scale=1">\n')
-        g.write('<link rel="stylesheet" href="css/skeleton.css">\n')
-        if Script:
-            pass
-            '''
-            g.write('<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" type="text/javascript"></script>\n')
-            g.write('<script type="text/javascript">\n')
-            g.write('$(document).ready(function(){\n')
-            g.write('$("#report tr:nth-child(3n+1)").addClass("odd");\n')
-            g.write('$("#report tr:nth-child(3n+2)").addClass("odd");\n')
-            g.write('$("#report tr:not(.odd)").hide();\n')
-            g.write('$("#report tr:first-child").show();\n')
-            g.write('$("#report tr.odd").click(function(){\n')
-            g.write('$(this).next("tr").toggle();\n')
-            g.write('$(this).find(".arrow").toggleClass("up");\n')
-            g.write('});\n')
-            g.write('//$("#report").jExpand();\n')
-            g.write("});\n")
-            g.write("</script>\n")
-            '''
-        g.write('</head>\n<body>\n')
-        if Full:
-            g.write('<div class="container">\n<div class="row">\n<div class="six columns" style="margin-top: 15%">')
-            g.write('<h4>{0}</h4>'.format(self.BCenter))
-            g.write('<h4>{0}</h4>'.format(self.Leaguename))
-            g.write('<h4>Week {0}</h4>'.format(week))
-            g.write('<h4>{0}</h4>'.format(self.dates[week - 1].strftime('6:45pm %A %d of %B, %Y')))
-            g.write('</div>\n<div class="six columns" style="margin-top: 15%">\n<h4>On this page</h4>\n')
-            g.write('<ol>\n<li><a href="#Standings-Handicap">Standings Handicap</a></li>\n')
-            g.write('<li><a href="#Schedule-by-id">Schedule by ID</a></li>\n')
-            g.write('<li><a href="#Schedule-by-name">Schedule by Name</a></li>\n')
-            g.write('<li><a href="#LWHS">Last Week\'s High Scores</a></li>\n')
-            g.write('<li><a href="#SHS">Season High Scores</a></li>\n')
-            g.write('<li><a href="#LWBB">Last Week By Bowler</a></li>\n')
-            g.write('</ol>\n</div>\n</div>\n</div>')
-        g.write('<div class="container">\n<div class="row">\n<div class="twelve columns">\n')
-        pass
 
     def CompileHigh(self,Data,Title):
         #Used for compiling the high game and series info...
