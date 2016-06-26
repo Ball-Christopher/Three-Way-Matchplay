@@ -1,11 +1,11 @@
-import math
 import datetime
 import os
-from Bowler import *
-from random import *
-from operator import itemgetter, attrgetter
+from operator import itemgetter
+
 import pdfkit
-import csv as csv
+
+from Bowler import *
+
 
 def suffix(d):
     return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
@@ -34,106 +34,36 @@ Font encoding http://blog.shaharia.com/use-google-web-fonts-for-wkhtmltopdf-tool
 class League:
 
     def CalculateWeeklyPoints(self, week):
-        WeekSchedule = self.Schedule[week-1]
+        WeekSchedule = self.Schedule[week - 1]
+        Num_To_Process = self.Pattern[week - 1]
         for Type in ('Scratch', 'Handicap'):
-            for i in range(len(WeekSchedule)):
-                if i % 3 == 0:
-                    self.CompareBowler(week,WeekSchedule[i]-1,WeekSchedule[i+1]-1,Type)
-                    self.CompareBowler(week,WeekSchedule[i]-1,WeekSchedule[i+2]-1,Type)
-                elif i % 3 == 1:
-                    self.CompareBowler(week,WeekSchedule[i]-1,WeekSchedule[i-1]-1,Type)
-                    self.CompareBowler(week,WeekSchedule[i]-1,WeekSchedule[i+1]-1,Type)
-                elif i % 3 == 2:
-                    self.CompareBowler(week,WeekSchedule[i]-1,WeekSchedule[i-2]-1,Type)
-                    self.CompareBowler(week,WeekSchedule[i]-1,WeekSchedule[i-1]-1,Type)
-
-    def BackdateHandicap(self,NumWeeks,CurrentWeek):
-        #Only use after the number of weeks played is suitable for backdating.
-        for Bowler in self.League:
-            try:
-                Handicap = Bowler.GetHandicap(self.LeagueID,CurrentWeek)
-                for j in range(NumWeeks):
-                    Bowler.hcps[self.LeagueID,CurrentWeek-j-1] = Handicap
-            except KeyError:
-                pass
-
-    def BackdateBowlerHandicap(self,Name,NumWeeks,CurrentWeek):
-        #Backdate the handicap for an individual bowler.
-        Bowler = ''
-        for i in self.League:
-            if i.GetBowlerName()==Name:
-                Bowler = i
-        try:
-            Handicap = Bowler.GetHandicap(self.LeagueID,CurrentWeek)
-            for j in range(NumWeeks):
-                Bowler.hcps[self.LeagueID,CurrentWeek-j-1] = Handicap
-        except KeyError:
-            pass
-
-    def ReplaceBowler(self,OldBowler,NewBowler,Week):
-        #Update mappings
-        self.NameToTeamMap()
-        self.NameToLocationMap()
-        #Find team of the replaced bowler
-        Team = self.NameTeamMap[OldBowler]
-        #Add replacing bowler to the team
-        self.AddBowlerToTeam(Team[0],self.League[self.NameLocationMap[NewBowler]].GetBowlerID())
-        #Update team order for the week in question
-        if self.RPW == 1:
-            self.teamorder[Team[0],Week][self.TeamMap[Team[0]].index(self.NameLocationMap[OldBowler])] = self.TeamMap[Team[0]].index(self.NameLocationMap[NewBowler])
-        else:
-            for j in range(self.RPW):
-                self.teamorder[Team[0],Week,j+1][self.TeamMap[Team[0]].index(self.NameLocationMap[OldBowler])] = self.TeamMap[Team[0]].index(self.NameLocationMap[NewBowler])
-        #Update bowler averages, etc
-        Bowler = self.League[self.NameLocationMap[OldBowler]]
-        Bowler.Replaced(self.LeagueID,Week)
-
-    def PermanentReplaceBowler(self,OldBowler,NewBowler,Week):
-        ''' Still need to add change to the team mapping for name and make this consistently follow through the program.
-            Also need to update the replaced bowler so he could replace other bowlers later in the season'''
-        #Update mappings
-        self.NameToTeamMap()
-        self.NameToLocationMap()
-        #Find team of the replaced bowler
-        Team = self.NameTeamMap[OldBowler]
-        #Add replacing bowler to the team
-        self.AddBowlerToTeam(Team[0],self.League[self.NameLocationMap[NewBowler]].GetBowlerID())
-        #Update team order for the week in question
-        Bowler = self.League[self.NameLocationMap[OldBowler]]
-        for week in range(Week,self.weeklen):
-            self.teamorder[Team[0],week][self.TeamMap[Team[0]].index(self.NameLocationMap[OldBowler])] = self.TeamMap[Team[0]].index(self.NameLocationMap[NewBowler])
-            Bowler.Replaced(self.LeagueID,week)
+            for i in range(0, len(WeekSchedule), Num_To_Process):
+                Bowlers = WeekSchedule[i:(i + Num_To_Process)]
+                for B1 in Bowlers:
+                    for B2 in Bowlers:
+                        if B1 == B2: continue
+                        self.CompareBowler(week, B1 - 1, B2 - 1, Type)
 
     def BlindCorrection(self,BowlerName,Week):
         #Update mappings
         self.NameToLocationMap()
         #Find bowler and assign blind.
-        Bowler = self.League[self.NameLocationMap[BowlerName]]
+        Bowler = self.League[self.NameLocationMap[BowlerName.lower()]]
         Bowler.Blind(Week)
-
-    def PreBowl(self,BowlerName,Week):
-        #Update mappings
-        self.NameToTeamMap()
-        self.NameToLocationMap()
-        #Find bowler and assign blind.
-        Bowler = self.League[self.NameLocationMap[BowlerName]]
-        Bowler.PreBowl(self.LeagueID,Week)
 
     def BlindRule(self, BowlerA, BowlerB, Week, Handicap = True):
         ''' Bowler A is the active player, Bowler B is blind'''
-        if Handicap:
-            return(self.base - 10)
         # If blind in the first week or haven't started yet...
-        if BowlerB.GetAverage(Week - 1) < 0:
-            if BowlerA.GetAverage(Week) < 0:
-                return(0)
-            return(BowlerA.GetAverage(max(Week - 1, 1)) - 10)
+        if BowlerB.GetAverage(Week - 1) <= 0:
+            return (0)
+        if Handicap:
+            return (self.base - 10)
 
-        if BowlerA.GetAverage(Week - 1) > 0:
+        if BowlerA.GetAverage(Week - 1) >= 0:
             print(BowlerA.name, BowlerB.name, BowlerB.avgs)
-            return(min(BowlerB.GetAverage(Week - 1), BowlerA.GetAverage(Week - 1) - 10))
+            return (min(BowlerB.GetAverage(Week - 1) - 10, BowlerA.GetAverage(Week - 1) - 10))
         else:
-            return(min(BowlerB.GetAverage(Week - 1),BowlerA.GetAverage(Week) - 10))
+            return (min(BowlerB.GetAverage(Week - 1) - 10, BowlerA.GetAverage(Week) - 10))
         pass
 
     def CompareBowler(self,Week,BowlerNumA,BowlerNumB,Type):
@@ -151,13 +81,13 @@ class League:
             return
         SeriesB = BowlerB.GetSeries(Week) if Type == 'Scratch' else BowlerB.GetHSeries(Week)
         # Blind correction for inactive player.
+        BlindB = False
         if len(SeriesB) == 0:
             SeriesB = [self.BlindRule(BowlerA,BowlerB,Week,Handicap = not(Type == 'Scratch'))]*self.games
             BlindB = True
         else:
             if Type == 'Scratch':
                 SeriesB = [Game + 8*BowlerB.Female for Game in SeriesB]
-                BlindB = False
                 try:
                     BowlerB.OppScore[Week].extend(BowlerA.GetSeries(Week))
                 except KeyError:
@@ -218,7 +148,11 @@ class League:
         #  Must be called after calculate weekly points!!!! This could be added as a check later...
         #  First step get a data matrix together.
         if self.scratch: FinalS, Scratch = self.CompileStandings('Scratch',week)
+        else:
+            Scratch = None
         if self.handicap: FinalH,Handicap = self.CompileStandings('Handicap',week)
+        else:
+            Handicap = None
         #  Now for the weekly and season high scores for each team.
         IDataSS, IDataSG = self.Awards('Scratch', week)
         IDataHS, IDataHG = self.Awards('Handicap', week)
@@ -233,8 +167,28 @@ class League:
             Lane = 1
             BowlersDataScratch.append(Member.HeaderInformation(week, Lane, i + 1))
             BowlersDataHandicap.append(Member.HeaderInformation(week, Lane, i + 1))
-            BowlersDataScratch.append(Member.GetSummaryData(week, 'Scratch'))
-            BowlersDataHandicap.append(Member.GetSummaryData(week, 'Handicap'))
+            BowlersDataScratch.append(Member.GetSummaryData(week, 'Scratch',
+                                                            [self.PointsAllocated[week]['GameD'] +
+                                                             self.PointsAllocated[week]['GameW'],
+                                                             2 * self.PointsAllocated[week]['GameW']],
+                                                            [self.PointsAllocated[week]['GameD'],
+                                                             self.PointsAllocated[week]['GameW']],
+                                                            [self.PointsAllocated[week]['SerD'] +
+                                                             self.PointsAllocated[week]['SerW'],
+                                                             2 * self.PointsAllocated[week]['SerW']],
+                                                            [self.PointsAllocated[week]['SerD'],
+                                                             self.PointsAllocated[week]['SerW']]))
+            BowlersDataHandicap.append(Member.GetSummaryData(week, 'Handicap',
+                                                             [self.PointsAllocated[week]['GameD'] +
+                                                              self.PointsAllocated[week]['GameW'],
+                                                              2 * self.PointsAllocated[week]['GameW']],
+                                                             [self.PointsAllocated[week]['GameD'],
+                                                              self.PointsAllocated[week]['GameW']],
+                                                             [self.PointsAllocated[week]['SerD'] +
+                                                              self.PointsAllocated[week]['SerW'],
+                                                              2 * self.PointsAllocated[week]['SerW']],
+                                                             [self.PointsAllocated[week]['SerD'],
+                                                              self.PointsAllocated[week]['SerW']]))
             if self.Schedule[week-1].index(i+1) % 2 == 1 and self.Schedule[week-1].index(i+1) != len(self.Schedule[week-1]):
                 BowlersDataScratch.append(['\\midrule'])
                 BowlersDataHandicap.append(['\\midrule'])
@@ -242,9 +196,12 @@ class League:
 
         #  Add the schedule
         SchedDataNam = self.SchedulePrint(week, 'Name')
-        SchedDataNam.extend(self.SchedulePrint(week + 1, 'Name'))
         SchedDataNum = self.SchedulePrint(week, 'Num')
-        SchedDataNum.extend(self.SchedulePrint(week + 1, 'Num'))
+        try:
+            SchedDataNam.extend(self.SchedulePrint(week + 1, 'Name'))
+            SchedDataNum.extend(self.SchedulePrint(week + 1, 'Num'))
+        except TypeError:
+            pass
 
         #Now for the actual LaTeX output (the fun part)
         #Each section has a header (the blue part) with a title, a table header and table data (none of this stuff has midlines except Schedule).
@@ -271,10 +228,10 @@ class League:
         self.WriteHTML(h, Scratch, self.StScP, cls = 'standtable')
         g.write('<h2 id="Standings-Handicap">Standings Handicap</h2>\n')
         self.WriteHTML(g, Handicap, self.StHcP, cls = 'standtable')
-        g.write('<h2  id="Schedule-by-id">Schedule by ID</h2>\n')
-        self.WriteHTML(g, SchedDataNum, self.SchedNumP, cls = 'idtable')
-        h.write('<h2  id="Schedule-by-id">Schedule by ID</h2>\n')
-        self.WriteHTML(h, SchedDataNum, self.SchedNumP, cls = 'idtable')
+        # g.write('<h2  id="Schedule-by-id">Schedule by ID</h2>\n')
+        # self.WriteHTML(g, SchedDataNum, self.SchedNumP, cls = 'idtable')
+        # h.write('<h2  id="Schedule-by-id">Schedule by ID</h2>\n')
+        # self.WriteHTML(h, SchedDataNum, self.SchedNumP, cls = 'idtable')
         if self.byname:
             g.write('<h2  id="Schedule-by-name">Schedule by Name</h2>\n')
             self.WriteHTML(g, SchedDataNam, self.SchedNamP, cls = 'boldtable')
@@ -357,34 +314,34 @@ class League:
             custom_strftime('{S} of %B, %Y', self.dates[week-1]), self.Leaguename, week))
         file.write('</table>\n<table style="width: 100%;">\n')
         file.write('<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> {1} </td> <td style="width:20%"> Lanes 1 -- {2} </td> </tr>\n'.format(
-            self.dates[week-1].strftime('7:00pm %A'), self.BCenter, self.lanes))
+            self.dates[week - 1].strftime('6:45pm %A'), self.BCenter, self.lanes))
         file.write('</table></header>')
 
     def SchedulePrint(self, week, Version):
         #  Pull together the schedule.
+        if week - 1 >= len(self.Schedule):
+            return
         SchedData = [['{0}/{1}/{2}'.format(self.dates[week-1].day,self.dates[week-1].month,self.dates[week-1].year)]]
         LaneCount = 0
         Count = 0
         TeamName = [Member.dispname for Member in self.League][:len(self.Schedule[week-1])]
         CurrentWeek = self.Schedule[week - 1]
-        for i in range(0, len(CurrentWeek), 3):
+        for i in range(0, len(CurrentWeek), self.Pattern[week - 1]):
             if LaneCount >= self.lanes:
                 SchedData.append([''])
                 Count += 1
                 LaneCount = 0
                 if Version == 'Name':
-                    SchedData[Count].extend(['{0} / {1} / {2}'.format(
-                            TeamName[CurrentWeek[i]-1], TeamName[CurrentWeek[i+1]-1], TeamName[CurrentWeek[i+2]-1])])
+                    SchedData[Count].extend(
+                        [' / '.join(TeamName[j - 1] for j in CurrentWeek[i:(i + self.Pattern[week - 1])])])
                 else:
-                    SchedData[Count].extend(['{0}--{1}--{2}'.format(
-                            CurrentWeek[i], CurrentWeek[i+1], CurrentWeek[i+2])])
+                    SchedData[Count].extend(['--'.join(str(j) for j in CurrentWeek[i:(i + self.Pattern[week - 1])])])
             else:
                 if Version == 'Name':
-                    SchedData[Count].extend(['{0} / {1} / {2}'.format(
-                            TeamName[CurrentWeek[i]-1], TeamName[CurrentWeek[i+1]-1], TeamName[CurrentWeek[i+2]-1])])
+                    SchedData[Count].extend(
+                        [' / '.join(TeamName[j - 1] for j in CurrentWeek[i:(i + self.Pattern[week - 1])])])
                 else:
-                    SchedData[Count].extend(['{0}--{1}--{2}'.format(
-                            CurrentWeek[i], CurrentWeek[i+1], CurrentWeek[i+2])])
+                    SchedData[Count].extend(['--'.join(str(j) for j in CurrentWeek[i:(i + self.Pattern[week - 1])])])
                 LaneCount += 2
         return(SchedData)
 
@@ -443,36 +400,52 @@ class League:
             g.write('</tr>\n')
         g.write('</tbody>\n</table>\n')
 
-    def WritePreambleHTML(self, g, week, Full=True, Local=False):
+    def WritePreambleHTML(self, g, week, Full=True, Script=False):
         g.write('<!DOCTYPE html>\n<html lang="en">\n')
         g.write('<header>\n')
         g.write('<table style="border-bottom:1pt solid black; width: 100%;">\n')
-        g.write('<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> <h4> {1} </h4> </td> <td style="width:20%"> Week {2} </td> </tr>\n'.format(
-            custom_strftime('{S} of %B, %Y', self.dates[week-1]), self.Leaguename, week))
+        if type(week) == int:
+            g.write(
+                '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> <h4> {1} </h4> </td> <td style="width:20%"> Week {2} </td> </tr>\n'.format(
+                    custom_strftime('{S} of %B, %Y', self.dates[week - 1]), self.Leaguename, week))
+        else:
+            g.write(
+                '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> <h4> {1} </h4> </td> <td style="width:20%"> {2} </td> </tr>\n'.format(
+                    "", self.Leaguename, ""))
         g.write('</table>\n<table style="width: 100%;">\n')
         g.write('<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> {1} </td> <td style="width:20%"> Lanes 1 -- {2} </td> </tr>\n'.format(
-            self.dates[week-1].strftime('7:00pm %A'), self.BCenter, self.lanes))
+            self.dates[0].strftime('6:45pm %A'), self.BCenter, self.lanes))
         g.write('</table></header>')
         g.write('<head>\n<meta charset="utf-8">\n')
         g.write('<title>{1} Week {0} Recap</title>'.format(week, self.Leaguename))
         g.write('<meta name="description" content="">\n<meta name="author" content="">\n')
         g.write('<meta name="viewport" content="width=device-width, initial-scale=1">\n')
         g.write('<link rel="stylesheet" href="css/skeleton.css">\n')
-        #g.write('<link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">\n')
-        # if Local:
-        #     g.write('<link rel="stylesheet" href="css/normalize.css">\n')
-        #     g.write('<link rel="stylesheet" href="css/skeleton.css">\n')
-        # else:
-        #     g.write('<link rel="stylesheet" href="https://dl.dropboxusercontent.com/u/90265306/HTML/css/normalize.css">\n')
-        #     g.write('<link rel="stylesheet" href="https://dl.dropboxusercontent.com/u/90265306/HTML/css/skeleton.css">\n')
-        # g.write('<link rel="icon" type="image/png" href="images/favicon.png">\n')
+        if Script:
+            pass
+            '''
+            g.write('<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" type="text/javascript"></script>\n')
+            g.write('<script type="text/javascript">\n')
+            g.write('$(document).ready(function(){\n')
+            g.write('$("#report tr:nth-child(3n+1)").addClass("odd");\n')
+            g.write('$("#report tr:nth-child(3n+2)").addClass("odd");\n')
+            g.write('$("#report tr:not(.odd)").hide();\n')
+            g.write('$("#report tr:first-child").show();\n')
+            g.write('$("#report tr.odd").click(function(){\n')
+            g.write('$(this).next("tr").toggle();\n')
+            g.write('$(this).find(".arrow").toggleClass("up");\n')
+            g.write('});\n')
+            g.write('//$("#report").jExpand();\n')
+            g.write("});\n")
+            g.write("</script>\n")
+            '''
         g.write('</head>\n<body>\n')
         if Full:
             g.write('<div class="container">\n<div class="row">\n<div class="six columns" style="margin-top: 15%">')
             g.write('<h4>{0}</h4>'.format(self.BCenter))
             g.write('<h4>{0}</h4>'.format(self.Leaguename))
             g.write('<h4>Week {0}</h4>'.format(week))
-            g.write('<h4>{0}</h4>'.format(self.dates[week-1].strftime('7:00pm %A %d of %B, %Y')))
+            g.write('<h4>{0}</h4>'.format(self.dates[week - 1].strftime('6:45pm %A %d of %B, %Y')))
             g.write('</div>\n<div class="six columns" style="margin-top: 15%">\n<h4>On this page</h4>\n')
             g.write('<ol>\n<li><a href="#Standings-Handicap">Standings Handicap</a></li>\n')
             g.write('<li><a href="#Schedule-by-id">Schedule by ID</a></li>\n')
@@ -555,17 +528,7 @@ class League:
         self.PointsAllocated = {}
         self.Bowlers = []  # Bowler ID of every bowler who has bowled in the league.
         self.League = []  # All the bowlers currently in the league.
-
-    def GetTeamNamesNumber(self,TName,Week):
-        CTeamNames = []
-        for i in range(self.Teams):
-            #Find team name for the week in question
-            TeamNames = self.teamnames[i]
-            for j in range(0,len(TeamNames),2):
-                if Week >= TeamNames[j]:
-                    index = j+1
-            CTeamNames.append(TeamNames[index])
-        return(CTeamNames.index(TName))
+        self.Pattern = []
 
     def ScheduleDates(self,n):
         a = self.sdate
@@ -576,7 +539,7 @@ class League:
 
     def LeagueData(self, Lname='Unknown', BCenter='Unknown', day='Unknown', games=6, alpha=100,
                    base=200, moving=0, minhandicap = 0, lanes=12, byname=True, bynum=True,
-                   scratch=True, handicap=True, sdate=[], weeklen=[]):
+                   scratch=True, handicap=True, sdate=None, weeklen=None):
         self.Excluded([])
         self.Leaguename = Lname
         self.BCenter = BCenter
@@ -591,7 +554,7 @@ class League:
         self.bynumber = bynum
         self.scratch = scratch
         self.handicap = handicap
-        if sdate == []:
+        if sdate is None:
             self.sdate = datetime.date(2011,1,27)
         else:
             temp = sdate.split('/')
@@ -658,26 +621,15 @@ class League:
     def NameToLocationMap(self):
         self.NameLocationMap = {}
         for i in self.League:
-            self.NameLocationMap[i.GetBowlerName()] = self.League.index(i)
-            self.NameLocationMap[i.GetBowlerDispName()] = self.League.index(i)
-
-    def NameToTeamMap(self):
-        self.NameTeamMap = {}
-        for i in range(len(self.League)):
-            for j in self.TeamMap.keys():
-                for k in self.TeamMap[j]:
-                    if k==i:
-                        try:
-                            self.NameTeamMap[self.League[i].GetBowlerName()].append(j)
-                        except KeyError:
-                            self.NameTeamMap[self.League[i].GetBowlerName()] = [j]
+            self.NameLocationMap[i.GetBowlerName().lower()] = self.League.index(i)
+            self.NameLocationMap[i.GetBowlerDispName().lower()] = self.League.index(i)
 
     def AddSeries(self, BowlerName, Week, *Series):
-        Bowler = self.League[self.NameLocationMap[BowlerName]]
+        Bowler = self.League[self.NameLocationMap[BowlerName.lower()]]
         Bowler.AddSeries(Week, Series, self.GetHandicapInfo())
 
     def AddSeriesS(self, BowlerName, Week, *Series):
-        Bowler = self.League[self.NameLocationMap[BowlerName]]
+        Bowler = self.League[self.NameLocationMap[BowlerName.lower()]]
         Bowler.AddSeries(Week, Series, self.GetHandicapInfo(),Silent=1)
 
     def ListToCSVFormat(self,List,depth=1):
@@ -710,7 +662,7 @@ if __name__ == '__main__':
     # Create and add bowlers to league
     Names = ['Art', 'Bob', 'Chris']
     for Name in Names:
-        New_League.AddNewBowler(Name)
+        New_League.AddNewBowler(Name, Name)
 
     # Add scores for week 1
     New_League.AddSeries('Art', 1, 100, 100, 100, 100, 100, 100)  # Art {1: [1, 0, 2, 1, 0, 0, 0]}
@@ -721,8 +673,8 @@ if __name__ == '__main__':
     New_League.CalculateWeeklyPoints(1)
 
     # Check the points for all of the bowlers
-    for Bowler in New_League.League:
-        print(Bowler.name, Bowler.SPoints)
+    for B in New_League.League:
+        print(B.name, B.SPoints)
 
     # Print HTML report for the week...
     New_League.LaTeXWeekly(1)

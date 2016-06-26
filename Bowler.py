@@ -1,11 +1,6 @@
 import math
-import datetime
-import os
-import csv as csv
-from Bowler import *
 from statistics import mean, StatisticsError
-from random import *
-from operator import itemgetter, attrgetter
+
 
 class Bowler:
 
@@ -16,13 +11,16 @@ class Bowler:
         return(self.hseries[Week])
 
     def GetSeriesType(self, Week, Type):
-        if Type == 'Scratch' and len(self.series[Week]) > 0: return(self.series[Week])
-        if Type == 'Handicap' and len(self.hseries[Week]) > 0: return(self.hseries[Week])
+        try:
+            if Type == 'Scratch' and len(self.series[Week]) > 0: return (self.series[Week])
+            if Type == 'Handicap' and len(self.hseries[Week]) > 0: return (self.hseries[Week])
+        except:
+            pass
         return([0])
 
-    def __init__(self, name = '', info = [], dispname = '', Female = False):
+    def __init__(self, name='', info=None, dispname='', Female=False):
         self.name = name
-        self.dispname = name if dispname == '' else dispname
+        self.dispname = name if dispname == '' else dispname.title()
         self.nameinit = name
         self.info = info
         self.SPoints = {}
@@ -56,17 +54,17 @@ class Bowler:
         else: Out.append(str(sum(Games)))
         return(Out)
 
-    def GetSummaryData(self, week, Type):
+    def GetSummaryData(self, week, Type, Bold, Italic, BoldS, ItS):
         Data = [self.name, max(self.GetAverage(week),0)]
         if Type == 'Handicap': Data.append(self.GetHandicap(week))
         # Add Blind and Win/Loss highlighting here...
         if Type == 'Scratch':
-            Data.extend(self.AddHighlight(self.GetSeries(week), self.SPoints[week], [3, 4], [1, 2], [9, 12], [3, 6]))
+            Data.extend(self.AddHighlight(self.GetSeries(week), self.SPoints[week], Bold, Italic, BoldS, ItS))
             #Data.extend(self.SPoints[week])
             Data.append(sum(self.SPoints[week]))
             #Data.append(sum(sum(v) for k,v in self.series.items() if k <= week))
         elif Type == 'Handicap':
-            Data.extend(self.AddHighlight(self.GetHSeries(week), self.HPoints[week], [3, 4], [1, 2], [9, 12], [3, 6]))
+            Data.extend(self.AddHighlight(self.GetHSeries(week), self.HPoints[week], Bold, Italic, BoldS, ItS))
             #Data.append(sum(self.GetHSeries(week)))
             Data.append(sum(self.HPoints[week]))
             #Data.append(sum(sum(v) for k,v in self.hseries.items() if k <= week))
@@ -94,22 +92,17 @@ class Bowler:
         except StatisticsError:
             AvgAgainst = 0
         if Type == 'Scratch':
-            return([Count, self.name, Total_Points, Last_Points,
-                Avg, High_Game, High_Series, Total_Pins, math.floor(AvgAgainst)])
+            return ([Count,
+                     '<a href="http://www.northcitytenpin.co.nz/Data/Sites/1/media/leagues/northcitysingles/april-2016/Stats_{1}.html">{0}</a>'.format(
+                         self.name, '_'.join(self.name.title().split())),
+                     Total_Points, Last_Points,
+                     Avg, High_Game, High_Series, Total_Pins, math.floor(AvgAgainst)])
         else:
-            return([Count, self.name, Total_Points, Last_Points,
-                Avg, Hcp, High_Game, High_Series, Total_Pins])
-
-
-
-    def ReturnSeriesRawData(self,SID='',Date=''):
-        try:
-            return(self.RawData[SID,Date])
-        except KeyError:
-            return([])
-
-    def GetBowlerID(self):
-        return(self.BowlerID)
+            return ([Count,
+                     '<a href="http://www.northcitytenpin.co.nz/Data/Sites/1/media/leagues/northcitysingles/april-2016/Stats_{1}.html">{0}</a>'.format(
+                         self.name, '_'.join(self.name.title().split())),
+                     Total_Points, Last_Points,
+                     Avg, Hcp, High_Game, High_Series, Total_Pins])
 
     def IsReplaced(self, Week):
         try:
@@ -156,7 +149,7 @@ class Bowler:
             self.hseries[Week] = HSeries
         [alpha, base, moving, minhandicap] = HandicapInfo
         self.avgs[Week] = mean(it for k,v in self.series.items() if k <= Week for it in v)
-        self.hcps[Week] = math.floor(max(minhandicap, alpha/100*(base - self.avgs[Week])))
+        self.hcps[Week] = math.floor(max(minhandicap, alpha / 100 * (base - math.floor(self.avgs[Week]))))
         if Week == 1: Ind = True
         try:
             self.hcps[Week-1]
