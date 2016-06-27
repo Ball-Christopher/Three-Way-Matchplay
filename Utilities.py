@@ -1,7 +1,94 @@
 import os
+import random
 
 import pdfkit
 
+
+def Score_Week_Pin_Position(DB, League, Week, Vacant=()):
+    # Add scores from pin position data to league
+    for P in DB.Players:
+        Sc = [G.FS[-2] for G in P.Games if G.Meta[2].date() == League.dates[Week - 1]]
+        if len(Sc) != 6:
+            print(P.Name, 'has no scores for week', Week)
+            continue
+        League.AddSeries(P.Name, Week, Sc[0], Sc[1], Sc[2], Sc[3], Sc[4], Sc[5])
+
+    for P in Vacant:
+        League.BlindCorrection(P, Week)
+
+    # Calculate Weekly Scores
+    League.CalculateWeeklyPoints(Week)
+    # Print HTML report for the week...
+    League.LaTeXWeekly(Week)
+
+
+def Brackets_Simulation(League, Week):
+    Winners = {}
+    for i in range(10000):
+        Br = Brackets(League, Week)
+        Name = Br[-1][0][1]
+        if Name in Winners:
+            Winners[Name] += 1
+        else:
+            Winners[Name] = 1
+
+    for key, value in Winners.items():
+        print(key, value)
+    print("===============//===============")
+
+
+def Brackets(League, Week):
+    # Get references to each member of the league.
+    L = League.League
+
+    # Get scores for the week in question.
+    Scores = [P.GetHSeries(Week) if len(P.GetHSeries(Week)) == 6 else [0] * 6 for P in L]
+    Names = [P.name for P in L]
+
+    # Shuffle
+    Bind = list(zip(Scores, Names))
+    random.shuffle(Bind)
+    Scores, Names = zip(*Bind)
+
+    OUT = []
+    for Round in range(5):
+        Next = []
+        Next_Name = []
+
+        if Round == 0:
+            Top = 16
+        else:
+            Top = len(Scores)
+
+        OUT.append([[S[Round], N] for S, N in zip(Scores, Names)])
+
+        for Game in range(0, Top, 2):
+            if Scores[Game][Round] > Scores[Game + 1][Round]:
+                Next.append(Scores[Game])
+                Next_Name.append(Names[Game])
+            elif Scores[Game][Round] < Scores[Game + 1][Round]:
+                Next.append(Scores[Game + 1])
+                Next_Name.append(Names[Game + 1])
+            else:
+                if Scores[Game][Round + 1] > Scores[Game + 1][Round + 1]:
+                    Next.append(Scores[Game])
+                    Next_Name.append(Names[Game])
+                elif Scores[Game][Round + 1] < Scores[Game + 1][Round + 1]:
+                    Next.append(Scores[Game + 1])
+                    Next_Name.append(Names[Game + 1])
+                else:
+                    Next.append(Scores[Game])
+                    Next_Name.append(Names[Game])
+
+        if Round == 0:
+            Next.extend(Scores[-8:])
+            Next_Name.extend(Names[-8:])
+
+        Scores = Next
+        Names = Next_Name
+
+    OUT.append([[S[Round], N] for S, N in zip(Scores, Names)])
+    return (OUT)
 
 def suffix(d):
     return 'th' if 11 <= d <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(d % 10, 'th')
@@ -136,7 +223,8 @@ def HTMLStatistics(DB, League):
         F = '_'.join(P.Name.title().split())
         hfile = os.getcwd() + '/HTML/Stats_{0}.html'.format(F)
         h = open(hfile, 'w')
-        WritePreambleHTML(h, F, Full=False, Script=False)
+        WritePreambleHTML(h, F, Full=False, Script=False, Leaguename=League.Leaguename,
+                          BCenter=League.BCenter, dates=League.dates, lanes=League.lanes)
         Span = [2] * 9
         Span.append(3)
         # Span.extend([3,3])
@@ -174,7 +262,7 @@ def HTMLStatistics(DB, League):
                 'TParams': ['l'] * len(Head_Comp),
                 'HeadFormatB': ['{\\tiny{\\bf '] * len(Head_Comp), 'HeadFormatE': ['}}'] * len(Head_Comp),
                 'Size': -1, 'Guide': True, 'TwoColumn': False}
-        League.WriteHTML(h, Text, Comp, cls='standtable')
+        WriteHTML(h, Text, Comp, cls='standtable')
         # Spare effectiveness by combinations
         P.MostCommonLeaves()
         Pairs = sorted(P.Left.items(), key=lambda x: -x[1])

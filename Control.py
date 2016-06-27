@@ -6,7 +6,6 @@ Purpose: To control the three-way league running
 at North City Tenpin.
 
 TODO:
-1) Gather all of the utilities, particularly HTML, in the same place.
 2) Brackets and against the field utilities.
 3) Base64 encode pin position and pdf through webkit, see
 http://stackoverflow.com/questions/24846171/how-to-convert-an-html-document-containing-an-svg-to-a-pdf-file-in-python
@@ -15,7 +14,7 @@ http://stackoverflow.com/questions/24846171/how-to-convert-an-html-document-cont
 """
 from BowlerTeamsTest import *
 from Database import *
-from Utilities import HTMLStatistics
+from Utilities import HTMLStatistics, Brackets_Simulation, Score_Week_Pin_Position
 
 # Declare league object
 New_League = League(n=24)
@@ -93,9 +92,6 @@ New_League.BlindCorrection('Daniel', Week)
 New_League.BlindCorrection('Alan', Week)
 New_League.BlindCorrection('Alysha', Week)
 New_League.BlindCorrection('Vacant', Week)
-# New_League.League[New_League.NameLocationMap['Lil']].avgs[0] = 145
-# New_League.League[New_League.NameLocationMap['Lil']].hcps[0] = 220 - 145
-# New_League.BlindCorrection('Lil', Week)
 
 Week = 2
 
@@ -195,47 +191,14 @@ New_League.CalculateWeeklyPoints(3)
 # Print HTML report for the week...
 New_League.LaTeXWeekly(3)
 
-Week = 4
-
-for P in DB.Players:
-    Sc = [G.FS[-2] for G in P.Games if G.Meta[2].date() == New_League.dates[Week - 1]]
-    if P.Name == 'Stephanie George': print(Sc)
-    if len(Sc) != 6:
-        print(P.Name, 'has no scores for week', Week)
-        continue
-    New_League.AddSeries(P.Name, Week, Sc[0], Sc[1], Sc[2], Sc[3], Sc[4], Sc[5])
-
-# New_League.AddSeries('Hamish', Week, 186, 109, 134, 196, 201, 154)
-# New_League.AddSeries('Andy', Week, 156, 184, 187, 184, 150, 152)
-New_League.BlindCorrection('Vacant', Week)
-New_League.BlindCorrection('Shane', Week)
-
-# Calculate Weekly Scores
-New_League.CalculateWeeklyPoints(Week)
-
-# Print HTML report for the week...
-New_League.LaTeXWeekly(Week)
+Score_Week_Pin_Position(DB, New_League, 4, Vacant=('Vacant', 'Shane'))
 
 Week = 5
-
-for P in DB.Players:
-    Sc = [G.FS[-2] for G in P.Games if G.Meta[2].date() == New_League.dates[Week - 1]]
-    if len(Sc) != 6:
-        print(P.Name, 'has no scores for week', Week)
-        continue
-    New_League.AddSeries(P.Name, Week, Sc[0], Sc[1], Sc[2], Sc[3], Sc[4], Sc[5])
-
-New_League.BlindCorrection('Vacant', Week)
 New_League.AddSeries('Clare', Week, 139, 140, 134, 164, 137, 210)
-New_League.BlindCorrection('Roger', Week)
+Score_Week_Pin_Position(DB, New_League, 5, Vacant=('Vacant', 'Roger'))
 
-# Calculate Weekly Scores
-New_League.CalculateWeeklyPoints(Week)
-
-# Print HTML report for the week...
-New_League.LaTeXWeekly(Week)
-
-Week = 6
+Brackets_Simulation(New_League, 3)
+Brackets_Simulation(New_League, 5)
 
 # Luke joins us in place of Daniel...
 
@@ -246,78 +209,15 @@ New_League.League[-1].SPoints = SP
 New_League.League[-1].HPoints = HP
 New_League.NameToLocationMap()
 
-for P in DB.Players:
-    Sc = [G.FS[-2] for G in P.Games if G.Meta[2].date() == New_League.dates[Week - 1]]
-    if len(Sc) != 6:
-        print(P.Name, 'has no scores for week', Week)
-        continue
-    New_League.AddSeries(P.Name, Week, Sc[0], Sc[1], Sc[2], Sc[3], Sc[4], Sc[5])
+New_League.AddSeries('Terry', 6, 198, 157, 197, 188, 194, 146)
 
-New_League.BlindCorrection('Vacant', Week)
-# New_League.BlindCorrection('Daniel', Week)
-New_League.AddSeries('Terry', Week, 198, 157, 197, 188, 194, 146)
+Score_Week_Pin_Position(DB, New_League, 6, Vacant=('Vacant',))
+Score_Week_Pin_Position(DB, New_League, 7, Vacant=('Vacant', 'Alan'))
+Score_Week_Pin_Position(DB, New_League, 8, Vacant=('Vacant', 'Gibby', 'Kelly', 'Danual'))
+Score_Week_Pin_Position(DB, New_League, 9, Vacant=('Vacant', 'Chris B', 'Danual'))
 
-# Calculate Weekly Scores
-New_League.CalculateWeeklyPoints(Week)
-
-# Print HTML report for the week...
-New_League.LaTeXWeekly(Week)
-
-Week = 7
-
-for P in DB.Players:
-    Sc = [G.FS[-2] for G in P.Games if G.Meta[2].date() == New_League.dates[Week - 1]]
-    if len(Sc) != 6:
-        print(P.Name, 'has no scores for week', Week)
-        continue
-    New_League.AddSeries(P.Name, Week, Sc[0], Sc[1], Sc[2], Sc[3], Sc[4], Sc[5])
-
-New_League.BlindCorrection('Vacant', Week)
-New_League.BlindCorrection('Alan', Week)
-# New_League.BlindCorrection('Daniel', Week)
-
-# Calculate Weekly Scores
-New_League.CalculateWeeklyPoints(Week)
-
-Week = 8
-
-for P in DB.Players:
-    Sc = [G.FS[-2] for G in P.Games if G.Meta[2].date() == New_League.dates[Week - 1]]
-    if len(Sc) != 6:
-        print(P.Name, 'has no scores for week', Week)
-        continue
-    New_League.AddSeries(P.Name, Week, Sc[0], Sc[1], Sc[2], Sc[3], Sc[4], Sc[5])
-
-New_League.BlindCorrection('Vacant', Week)
-New_League.BlindCorrection('Gibby', Week)
-New_League.BlindCorrection('Kelly', Week)
-New_League.BlindCorrection('Danual', Week)
-# New_League.BlindCorrection('Alan', Week)
-# New_League.BlindCorrection('Daniel', Week)
-
-# Calculate Weekly Scores
-New_League.CalculateWeeklyPoints(Week)
-# Print HTML report for the week...
-New_League.LaTeXWeekly(Week)
-
-Week = 9
-
-for P in DB.Players:
-    Sc = [G.FS[-2] for G in P.Games if G.Meta[2].date() == New_League.dates[Week - 1]]
-    if len(Sc) != 6:
-        print(P.Name, 'has no scores for week', Week)
-        continue
-    New_League.AddSeries(P.Name, Week, Sc[0], Sc[1], Sc[2], Sc[3], Sc[4], Sc[5])
-
-New_League.BlindCorrection('Vacant', Week)
-New_League.BlindCorrection('Chris B', Week)
-New_League.BlindCorrection('Danual', Week)
-# New_League.BlindCorrection('Alan', Week)
-# New_League.BlindCorrection('Daniel', Week)
-
-# Calculate Weekly Scores
-New_League.CalculateWeeklyPoints(Week)
-# Print HTML report for the week...
-New_League.LaTeXWeekly(Week)
 # Print the schedule
 New_League.CompleteSchedule()
+
+Brackets_Simulation(New_League, 7)
+Brackets_Simulation(New_League, 9)
