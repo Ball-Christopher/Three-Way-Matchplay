@@ -1,5 +1,6 @@
 import os
 import random
+from base64 import b64encode
 
 import pdfkit
 
@@ -87,7 +88,7 @@ def Brackets(League, Week):
         Scores = Next
         Names = Next_Name
 
-    OUT.append([[S[Round], N] for S, N in zip(Scores, Names)])
+    OUT.append([[S[4], N] for S, N in zip(Scores, Names)])
     return (OUT)
 
 def suffix(d):
@@ -214,6 +215,32 @@ def WritePreambleHTML(g, week, Full=True, Script=False,
     pass
 
 
+def Spare_Effectiveness(key, P, debug=False):
+    svg_text = '<svg xmlns="http://www.w3.org/2000/svg" width="2500" height="2500" viewBox="0 0 8 8" >'
+    X = [4, 3, 5, 2, 4, 6, 1, 3, 5, 7]
+    Y = [7, 5, 5, 3, 3, 3, 1, 1, 1, 1]
+    for i in range(1, 11):
+        svg_text += '<circle cx="{0}" cy="{1}" r="0.75" fill = "{2}"></circle>\n'.format(
+            X[i - 1], Y[i - 1], 'black' if i in key else 'gray')
+        svg_text += '<circle cx="{0}" cy="{1}" r="{2}" fill = "white"></circle>\n'.format(
+            X[i - 1], Y[i - 1], 0.7 if i not in key else 0.65)
+        if i in key:
+            svg_text += '<text x="{0}" y="{1}" font-size="1"> {2} </text>\n'.format(
+                X[i - 1] - (0.3 if i != 10 else 0.55), Y[i - 1] + 0.35, i)
+        svg_text += '<text x="{0}" y="{1}" font-size="0.8"> {2} </text>\n'.format(
+            5.5, 7, str(round(100 * P.Spared[key] / P.Left[key])) + '%')
+        svg_text += '<text x="{0}" y="{1}" font-size="0.8"> {2} </text>\n'.format(
+            0.5, 7, str(P.Spared[key]) + '/' + str(P.Left[key]))
+
+    svg_text += '</svg>'
+
+    if debug:
+        print(svg_text)
+    encoded_string = b64encode(svg_text.encode('utf-8'))
+    b64 = encoded_string.decode('utf-8')
+
+    return (b64)
+
 def HTMLStatistics(DB, League):
     config = pdfkit.configuration(wkhtmltopdf=bytes(r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe', 'utf-8'))
     path = r'C:\Users\Chris\Documents\League\Three Way\HTML\css\\'
@@ -274,27 +301,15 @@ def HTMLStatistics(DB, League):
         h.write('<tr>\n')
         for (key, value) in Pairs:
             if count == Cols:
-                h.write('</tr>\n')
-                h.write('<tr>\n')
+                h.write('</tr>\n</tbody>\n</table>\n')
+                h.write('<table class="sparetable" border="1">\n<tbody>\n<tr>\n')
                 count = 0
             h.write('<td>\n<center>\n')
-            h.write('<svg width="100%" height="auto" viewBox="0 0 8 8" >\n')
-            X = [4, 3, 5, 2, 4, 6, 1, 3, 5, 7]
-            Y = [7, 5, 5, 3, 3, 3, 1, 1, 1, 1]
-            for i in range(1, 11):
-                h.write('<circle cx="{0}" cy="{1}" r="0.75" fill = "{2}"></circle>\n'.format(
-                    X[i - 1], Y[i - 1], 'black' if i in key else 'gray'))
-                h.write('<circle cx="{0}" cy="{1}" r="{2}" fill = "white"></circle>\n'.format(
-                    X[i - 1], Y[i - 1], 0.7 if i not in key else 0.65))
-                if i in key:
-                    h.write('<text x="{0}" y="{1}" font-size="1"> {2} </text>\n'.format(
-                        X[i - 1] - (0.3 if i != 10 else 0.55), Y[i - 1] + 0.35, i))
-                h.write('<text x="{0}" y="{1}" font-size="0.8"> {2} </text>\n'.format(
-                    5.5, 7, str(round(100 * P.Spared[key] / P.Left[key])) + '%'))
-                h.write('<text x="{0}" y="{1}" font-size="0.8"> {2} </text>\n'.format(
-                    0.5, 7, str(P.Spared[key]) + '/' + str(P.Left[key])))
-
-            h.write('</svg>\n</center>\n</td>\n')
+            # INSERT HERE
+            h.write('<p><img width = "100%" alt="" src="data:image/svg+xml;base64,' + Spare_Effectiveness(key,
+                                                                                                          P) + '" /></p>')
+            # Spare_Effectiveness(key, P, debug = True)
+            h.write('</center>\n</td>\n')
             count += 1
         h.write('</tbody>\n</table>\n')
         # Section outputting frame-by-frame
@@ -390,5 +405,5 @@ def HTMLStatistics(DB, League):
                    'margin-bottom': '0in',
                    'margin-left': '0in',
                    'footer-right': '[page]'}
-        # pdfkit.from_file(hfile, os.getcwd()+r'\HTML\Stats_{0}.pdf'.format(F),
-        #                 configuration = config, css = css, options = options)
+        pdfkit.from_file(hfile, os.getcwd() + r'\HTML\Stats_{0}.pdf'.format(F), configuration=config, css=css,
+                         options=options)

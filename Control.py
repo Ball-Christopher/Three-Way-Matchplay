@@ -6,9 +6,9 @@ Purpose: To control the three-way league running
 at North City Tenpin.
 
 TODO:
-2) Brackets and against the field utilities.
 3) Base64 encode pin position and pdf through webkit, see
 http://stackoverflow.com/questions/24846171/how-to-convert-an-html-document-containing-an-svg-to-a-pdf-file-in-python
+http://metaskills.net/2011/03/20/pdfkit-overview-and-advanced-usage/
 4) Automate the league scoring, no more week variable and cut/paste.
 5) Clean up the console printed output, including pdfkit output if possible.
 """
