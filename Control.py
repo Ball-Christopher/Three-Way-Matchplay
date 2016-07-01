@@ -133,6 +133,8 @@ Map['CHRIS BALL'] = 'Chris Ball'
 DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_8.xls', Map)
 Exclude = ['VACANT', 'vacant', 'Player', 'BYE', 'Vacant', 'DANUAL', 'CHRIS B', 'JOSH']
 DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_9.xls', Map, Exclude=Exclude)
+Exclude = ['VACANT', 'vacant', 'Player', 'BYE', 'Vacant', 'LEONARD']
+DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_10.xls', Map, Exclude=Exclude)
 DB.LaneInfo()
 HTMLStatistics(DB, New_League)
 
@@ -215,7 +217,7 @@ Score_Week_Pin_Position(DB, New_League, 6, Vacant=('Vacant',))
 Score_Week_Pin_Position(DB, New_League, 7, Vacant=('Vacant', 'Alan'))
 Score_Week_Pin_Position(DB, New_League, 8, Vacant=('Vacant', 'Gibby', 'Kelly', 'Danual'))
 Score_Week_Pin_Position(DB, New_League, 9, Vacant=('Vacant', 'Chris B', 'Danual'))
-
+Score_Week_Pin_Position(DB, New_League, 10, Vacant=('Vacant', 'Chris B', 'Danual', 'Leonard'))
 # Print the schedule
 New_League.CompleteSchedule()
 
