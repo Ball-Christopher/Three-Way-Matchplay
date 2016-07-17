@@ -32,9 +32,10 @@ Schedule = [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 
             [10, 18, 21, 3, 17, 19, 2, 20, 9, 6, 8, 24, 11, 13, 16, 22, 14, 12, 7, 1, 4, 15, 5, 23],
             [7, 3, 12, 1, 10, 5, 22, 19, 18, 15, 11, 9, 20, 23, 6, 13, 8, 17, 2, 16, 24, 4, 14, 21],
             [10, 4, 19, 7, 6, 14, 1, 20, 12, 8, 16, 23, 22, 13, 9, 11, 18, 2, 5, 3, 21, 15, 17, 24],
-            [1, 6, 13, 18, 2, 14, 8, 10, 3, 16, 15, 4, 5, 17, 22, 20, 7, 11, 19, 23, 9, 24, 21, 12]]
+            [1, 6, 13, 18, 2, 14, 8, 10, 3, 16, 15, 4, 5, 17, 22, 20, 7, 11, 19, 23, 9, 24, 21, 12],
+            [16, 24, 18, 7, 20, 23, 14, 17, 11, 19, 9, 22, 6, 10, 8, 1, 15, 12, 4, 5, 13, 3, 2, 21]]
 
-New_League.Pattern = [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4]
+New_League.Pattern = [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3]
 
 for week in range(1, 40): New_League.SetTotals(week, ISerW = 6, ISerD = 3)
 # Add schedule to league
@@ -100,6 +101,11 @@ DB = Database()
 Map = {i.upper(): j for i, j in zip(DispNames, Names)}
 # Exclude = ['VACANT', 'vacant', 'Player', 'BYE']
 DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_2.xls', Map)
+DB.LaneInfo()
+DB.Players = [DB.Players[0]]
+HTMLStatistics(DB, New_League)
+STOP
+
 Map = {i: j for i, j in zip(DispNames, Names)}
 Exclude = ['VACANT', 'vacant', 'Player', 'BYE', 'Roger', 'Daniel']
 DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_3.xls', Map, Exclude=Exclude)
@@ -135,6 +141,10 @@ Exclude = ['VACANT', 'vacant', 'Player', 'BYE', 'Vacant', 'DANUAL', 'CHRIS B', '
 DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_9.xls', Map, Exclude=Exclude)
 Exclude = ['VACANT', 'vacant', 'Player', 'BYE', 'Vacant', 'LEONARD']
 DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_10.xls', Map, Exclude=Exclude)
+Exclude = ['VACANT', 'vacant', 'Player', 'BYE', 'Vacant']
+DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_11.xls', Map, Exclude=Exclude)
+Exclude = ['VACANT', 'vacant', 'Player', 'BYE', 'Vacant']
+DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_12.xls', Map, Exclude=Exclude)
 DB.LaneInfo()
 HTMLStatistics(DB, New_League)
 
@@ -218,8 +228,15 @@ Score_Week_Pin_Position(DB, New_League, 7, Vacant=('Vacant', 'Alan'))
 Score_Week_Pin_Position(DB, New_League, 8, Vacant=('Vacant', 'Gibby', 'Kelly', 'Danual'))
 Score_Week_Pin_Position(DB, New_League, 9, Vacant=('Vacant', 'Chris B', 'Danual'))
 Score_Week_Pin_Position(DB, New_League, 10, Vacant=('Vacant', 'Chris B', 'Danual', 'Leonard'))
+Score_Week_Pin_Position(DB, New_League, 11,
+                        Vacant=('Vacant', 'Chris B', 'Rob Pollock', 'Roger Tucker', 'Stephanie George'))
+
+for week in range(1, 40): New_League.SetTotals(week, ISerW=12, ISerD=6, IWinP=4, IDrawP=2)
+
+Score_Week_Pin_Position(DB, New_League, 12, Vacant=('Vacant', 'Rob Pollock', 'Leonard'))
 # Print the schedule
 New_League.CompleteSchedule()
 
 Brackets_Simulation(New_League, 7)
 Brackets_Simulation(New_League, 9)
+Brackets_Simulation(New_League, 11)

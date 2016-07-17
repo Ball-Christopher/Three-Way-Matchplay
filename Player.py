@@ -101,10 +101,13 @@ class Player:
         m, s = divmod(AvgTime.seconds, 60)
         self.AvgTime = '{0}:{1:02d}'.format(m, s)
         if Type == 1:
-            return (self.Name, self.G200, round(sum(self.Scores) / len(self.Scores), 2), max(self.Scores), self.Spares,
-                    self.Strikes, self.Open,
-                    self.Splits, self.SplitsC, self.SPM, sum(Game.FirstDist[9] for Game in self.Games), self.Errors,
-                    self.AvgTime)
+            return (self.Name, len(self.Scores),
+                    self.G200, round(sum(self.Scores) / len(self.Scores), 2), max(self.Scores),
+                    round(100 * self.Spares / self.SShots), round(100 * self.Strikes / self.FShots),
+                    round(100 * self.Open / self.FShots), round(100 * self.Splits / self.FShots, 1),
+                    round(100 * self.SplitsC / self.Splits, 1),
+                    round(100 * self.SPM / sum(Game.FirstDist[9] for Game in self.Games), 1),
+                    round(100 * self.Errors / self.FShots, 1))
         elif Type == 2:
             A = [self.Name]
             A.extend(self.Chain)

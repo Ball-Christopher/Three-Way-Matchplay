@@ -99,7 +99,7 @@ def custom_strftime(format, t):
     return t.strftime(format).replace('{S}', str(t.day) + suffix(t.day))
 
 
-def WriteHTML(g, Data, TableParam, cls='u-full-width'):
+def WriteHTML(g, Data, TableParam, cls='u-full-width', line_skip=3, font_change=True):
     TableHead = TableParam['Names']
     if cls == 'maintable':
         g.write('<table class="{0}" rules="groups" frame="hsides">\n<thead>\n'.format(cls))
@@ -111,7 +111,7 @@ def WriteHTML(g, Data, TableParam, cls='u-full-width'):
     g.write('</thead>\n<tbody>\n')
     Count = 0
     for row in Data:
-        if cls == 'maintable' and Count % 3 == 0 and Count > 0:
+        if cls == 'maintable' and Count % line_skip == 0 and Count > 0:
             g.write('</tbody>\n<tbody>\n')
         if len(row) == 1: continue
         Count += 1
@@ -143,9 +143,9 @@ def WriteHTML(g, Data, TableParam, cls='u-full-width'):
                 Red = False
             for Con in ('{', '}'):
                 el = el.replace(Con, '')
-            if Bold:
+            if Bold and font_change:
                 g.write('<td style="font-weight:bold" {1}>{0}</td>'.format(el, Align))
-            elif Italic:
+            elif Italic and font_change:
                 g.write('<td style="text-decoration: underline" {1}>{0}</td>'.format(el, Align))
             elif Red:
                 g.write('<td style="color:red" {1}>{0}</td>'.format(el, Align))
@@ -174,6 +174,13 @@ def WritePreambleHTML(g, week, Full=True, Script=False,
             dates[0].strftime('6:45pm %A'), BCenter, lanes))
     g.write('</table></header>')
     g.write('<head>\n<meta charset="utf-8">\n')
+    '''
+    This should work for page breaking, however...'''
+    g.write('<style type="text/css" media="screen,print">\n' +
+            '.break{\n' +
+            'display: block;\n' +
+            'clear: both;\n' +
+            'page-break-after: always;}\n</style>\n')
     g.write('<title>{1} Week {0} Recap</title>'.format(week, Leaguename))
     g.write('<meta name="description" content="">\n<meta name="author" content="">\n')
     g.write('<meta name="viewport" content="width=device-width, initial-scale=1">\n')
@@ -239,7 +246,59 @@ def Spare_Effectiveness(key, P, debug=False):
     encoded_string = b64encode(svg_text.encode('utf-8'))
     b64 = encoded_string.decode('utf-8')
 
-    return (b64)
+    return b64
+
+
+def Pin_Position_Frame(Frame, G):
+    if Frame == 10:
+        svg_text = '<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1600" viewBox="0 0 24 16" >'
+    else:
+        svg_text = '<svg xmlns="http://www.w3.org/2000/svg" width="2500" height="2500" viewBox="0 0 8 8" >'
+    # Now create svg images of each shot dynamically
+    if Frame == 10:
+        # Slightly different
+        if 11 not in G.PinPos:
+            Shots = 1
+        elif 12 not in G.PinPos:
+            Shots = 2
+        else:
+            Shots = 3
+        if Shots == 3:
+            Mult = 1
+        else:
+            Mult = 1.5
+        for S in range(Shots):
+            [First, Second] = G.PinPos[Frame + S]
+            X = [4, 3, 5, 2, 4, 6, 1, 3, 5, 7]
+            Y = [7, 5, 5, 3, 3, 3, 1, 1, 1, 1]
+            for i in range(1, 11):
+                svg_text += '<circle cx="{0}" cy="{1}" r="0.75" fill = "{2}"></circle>\n'.format(
+                    Mult * (X[i - 1] + 8 * S), 2 * Y[i - 1], 'black' if i in First else 'gray')
+                if i not in Second:
+                    svg_text += '<circle cx="{0}" cy="{1}" r="{2}" fill = "white"></circle>\n'.format(
+                        Mult * (X[i - 1] + 8 * S), 2 * Y[i - 1], 0.6 if i not in First else 0.4)
+        if Shots == 2:
+            svg_text += '<line x1="12" y1="0" x2="12" y2="16" style="stroke:rgb(0,0,0);stroke-width:0.1"/>\n'
+        if Shots == 3:
+            svg_text += '<line x1="8" y1="0" x2="8" y2="16" style="stroke:rgb(0,0,0);stroke-width:0.1"/>\n'
+            svg_text += '<line x1="16" y1="0" x2="16" y2="16" style="stroke:rgb(0,0,0);stroke-width:0.1" />\n'
+        pass
+    else:
+        [First, Second] = G.PinPos[Frame]
+        X = [4, 3, 5, 2, 4, 6, 1, 3, 5, 7]
+        Y = [7, 5, 5, 3, 3, 3, 1, 1, 1, 1]
+        for i in range(1, 11):
+            svg_text += '<circle cx="{0}" cy="{1}" r="0.5" fill = "{2}"></circle>\n'.format(
+                X[i - 1], Y[i - 1], 'black' if i in First else 'gray')
+            if i not in Second:
+                svg_text += '<circle cx="{0}" cy="{1}" r="{2}" fill = "white"></circle>\n'.format(
+                    X[i - 1], Y[i - 1], 0.45 if i not in First else 0.4)
+    svg_text += '</svg>'
+
+    encoded_string = b64encode(svg_text.encode('utf-8'))
+    b64 = encoded_string.decode('utf-8')
+
+    return b64
 
 def HTMLStatistics(DB, League):
     config = pdfkit.configuration(wkhtmltopdf=bytes(r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe', 'utf-8'))
@@ -277,12 +336,12 @@ def HTMLStatistics(DB, League):
                                                                   'Series bowled on '))
         h.write('</ol>\n</div>\n</div>\n</div>')
         # Section comparing bowler to others
-        Head_Comp = ["Name", "200 Games", "Avg", "High", "Spares", "Strikes", "Open",
-                     "Splits", "Splits Converted", "Single Pins Missed", "Single Pins Left", "Errors", "Avg Game Time"]
+        Head_Comp = ["Name", "Games", "200 Games", "Average", "High Game", "Spare %", "Strike %", "Open %",
+                     "Split %", "Splits Converted %", "Single Pins Missed %", "Error %"]
         Text = []
         for Pl in DB.Players:
             Text.append(Pl.SummaryStats(1))
-        Text.sort(key=lambda key: -key[2])
+        Text.sort(key=lambda key: -key[3])
         h.write('<h2 id="Comparison">Detailed League Statistics</h2>\n')
         h.write('Note that only series bowled with the new computer system (installed in Week 2) will be counted here.')
         Comp = {'Names': Head_Comp,
@@ -305,18 +364,27 @@ def HTMLStatistics(DB, League):
                 h.write('<table class="sparetable" border="1">\n<tbody>\n<tr>\n')
                 count = 0
             h.write('<td>\n<center>\n')
-            # INSERT HERE
-            h.write('<p><img width = "100%" alt="" src="data:image/svg+xml;base64,' + Spare_Effectiveness(key,
-                                                                                                          P) + '" /></p>')
+            h.write('<p><img width = "100%" alt="" src="data:image/svg+xml;base64,' +
+                    Spare_Effectiveness(key, P) + '" /></p>')
             # Spare_Effectiveness(key, P, debug = True)
             h.write('</center>\n</td>\n')
             count += 1
+
+        svg_text = '<svg xmlns="http://www.w3.org/2000/svg" width="2500" height="2500" viewBox="0 0 8 8">'
+        svg_text += '<rect width="8" height="8" style="fill:rgb(255,255,255);stroke:rgb(255,255,255)" /></svg>'
+        encoded_string = b64encode(svg_text.encode('utf-8'))
+        b64 = encoded_string.decode('utf-8')
+        for x in range(count % 5, 5):
+            h.write('<td> <p><img width = "100%" alt="" src="data:image/svg+xml;base64,' +
+                    b64 + '" /></p></td>')
+            # h.write('<td> <p><img width = "100%" alt="" /></p> </td>\n')
         h.write('</tbody>\n</table>\n')
         # Section outputting frame-by-frame
         for G in P.Games:
             if G.Meta[2].date() != LastDate:
                 if LastDate != '':
                     h.write('</tbody>\n</table>\n')
+                h.write('<div class="break"></div>')
                 h.write(
                     '<h2 id="{0}">Frame-by-frame {0}</h2>'.format(custom_strftime('{S} of %B, %Y', G.Meta[2].date())))
                 h.write('<table class="frametable" border="1" id="report">\n<thead>\n')
@@ -352,50 +420,11 @@ def HTMLStatistics(DB, League):
             for Frame in range(1, 11):
                 if Frame == 10:
                     h.write('<td colspan = "3"><center>\n')
-                    h.write('<svg width="100%" height="auto" viewBox="0 0 24 16" >')
                 else:
                     h.write('<td colspan = "2"><center>\n')
-                    h.write('<svg width="auto" height = "100%" viewBox="0 0 8 8" >')
-                # Now create svg images of each shot dynamically
-                if Frame == 10:
-                    # Slightly different
-                    if 11 not in G.PinPos:
-                        Shots = 1
-                    elif 12 not in G.PinPos:
-                        Shots = 2
-                    else:
-                        Shots = 3
-                    if Shots == 3:
-                        Mult = 1
-                    else:
-                        Mult = 1.5
-                    for S in range(Shots):
-                        [First, Second] = G.PinPos[Frame + S]
-                        X = [4, 3, 5, 2, 4, 6, 1, 3, 5, 7]
-                        Y = [7, 5, 5, 3, 3, 3, 1, 1, 1, 1]
-                        for i in range(1, 11):
-                            h.write('<circle cx="{0}" cy="{1}" r="0.75" fill = "{2}"></circle>\n'.format(
-                                Mult * (X[i - 1] + 8 * S), 2 * Y[i - 1], 'black' if i in First else 'gray'))
-                            if i not in Second:
-                                h.write('<circle cx="{0}" cy="{1}" r="{2}" fill = "white"></circle>\n'.format(
-                                    Mult * (X[i - 1] + 8 * S), 2 * Y[i - 1], 0.6 if i not in First else 0.4))
-                    if Shots == 2:
-                        h.write('<line x1="12" y1="0" x2="12" y2="16" style="stroke:rgb(0,0,0);stroke-width:0.1"/>\n')
-                    if Shots == 3:
-                        h.write('<line x1="8" y1="0" x2="8" y2="16" style="stroke:rgb(0,0,0);stroke-width:0.1"/>\n')
-                        h.write('<line x1="16" y1="0" x2="16" y2="16" style="stroke:rgb(0,0,0);stroke-width:0.1" />\n')
-                    pass
-                else:
-                    [First, Second] = G.PinPos[Frame]
-                    X = [4, 3, 5, 2, 4, 6, 1, 3, 5, 7]
-                    Y = [7, 5, 5, 3, 3, 3, 1, 1, 1, 1]
-                    for i in range(1, 11):
-                        h.write('<circle cx="{0}" cy="{1}" r="0.5" fill = "{2}"></circle>\n'.format(
-                            X[i - 1], Y[i - 1], 'black' if i in First else 'gray'))
-                        if i not in Second:
-                            h.write('<circle cx="{0}" cy="{1}" r="{2}" fill = "white"></circle>\n'.format(
-                                X[i - 1], Y[i - 1], 0.45 if i not in First else 0.4))
-                h.write('</svg></center></td>')
+                h.write('<p><img width = "100%" alt="" src="data:image/svg+xml;base64,' +
+                        Pin_Position_Frame(Frame, G) + '" /></p>')
+                h.write('</center></td>')
             h.write('</tr>\n')
         h.write('</tbody>\n</table>\n')
         h.write('</div>\n</div>\n</div>\n</body>\n</html>')

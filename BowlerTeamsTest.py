@@ -221,6 +221,7 @@ class League:
         WritePreambleHTML(h, week, Full=False, Leaguename=self.Leaguename,
                           BCenter=self.BCenter, dates=self.dates, lanes=self.lanes)
         #Write end of document if appropriate
+        Bowlers = self.Pattern[week - 1]
         h.write('<h2 id="Standings-Scratch">Standings Scratch</h2>\n')
         WriteHTML(h, Scratch, self.StScP, cls='standtable')
         g.write('<h2 id="Standings-Handicap">Standings Handicap</h2>\n')
@@ -253,11 +254,13 @@ class League:
         h.write('<h2 id="LWBB">Last Week By Bowler</h2>\n')
         # Some basic cleaning before HTML processing
         BowlersH = [row for row in BowlersDataHandicap if len(row) > 1]
-        for i,row in enumerate(BowlersH): row.insert(0, '' if i % 3 != 0 else '{0}--{1}'.format(2*(i//3)+1, 2*(i//3+1)))
-        WriteHTML(g, BowlersH, self.WRecapH, cls='maintable')
+        for i, row in enumerate(BowlersH): row.insert(0, '' if i % self.Pattern[week - 1] != 0 else '{0}--{1}'.format(
+            2 * (i // self.Pattern[week - 1]) + 1, 2 * (i // self.Pattern[week - 1] + 1)))
+        WriteHTML(g, BowlersH, self.WRecapH, cls='maintable', line_skip=Bowlers, font_change=(Bowlers == 3))
         BowlersS = [row for row in BowlersDataScratch if len(row) > 1]
-        for i,row in enumerate(BowlersS): row.insert(0, '' if i % 3 != 0 else '{0}--{1}'.format(2*(i//3)+1, 2*(i//3+1)))
-        WriteHTML(h, BowlersS, self.WRecap, cls='maintable')
+        for i, row in enumerate(BowlersS): row.insert(0, '' if i % self.Pattern[week - 1] != 0 else '{0}--{1}'.format(
+            2 * (i // self.Pattern[week - 1]) + 1, 2 * (i // self.Pattern[week - 1] + 1)))
+        WriteHTML(h, BowlersS, self.WRecap, cls='maintable', line_skip=Bowlers, font_change=(Bowlers == 3))
         g.write('</div>')
         h.write('</div>')
         h.write('</div>\n</div>\n</div>\n</body>\n</html>')
