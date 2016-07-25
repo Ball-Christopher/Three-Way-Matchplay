@@ -115,8 +115,6 @@ class Database:
                     HCAP = False
                     count = 1
                     FbF.append(row)
-                    print(len(FbF))
-                    print(P.Name, Frames, [L, G, Start, End])
                     # bfdb
                     P.AddGame(Frames, [L, G, Start, End], FbF)
                     FbF = []
@@ -151,10 +149,8 @@ class Database:
                 G = int(row[1].split(' ')[-1])
                 Start = row[3] if NewDate is None else row[3].replace(NewDate[0], NewDate[1], NewDate[2])
                 End = row[4] if NewDate is None else row[4].replace(NewDate[0], NewDate[1], NewDate[2])
-                # Extract meta-data from game information.
-                # print(row,[L,G,Start,End])
             # Extracts frame totals
-            if len(row) == 11 and all(isinstance(x, int) for x in row):
+            if len(row) == 11 and all(isinstance(x, (int, float)) for x in row):
                 Frames = row
                 count = 0
         # self.Players = [self.Players[-1]]

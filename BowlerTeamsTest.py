@@ -49,13 +49,15 @@ class League:
     def BlindRule(self, BowlerA, BowlerB, Week, Handicap = True):
         ''' Bowler A is the active player, Bowler B is blind'''
         # If blind in the first week or haven't started yet...
-        if BowlerB.GetAverage(Week - 1) <= 0:
-            return (0)
         if Handicap:
             return (self.base - 10)
 
+        if BowlerB.GetAverage(Week - 1) <= 0:
+            if BowlerA.GetAverage(Week - 1) <= 0:
+                return BowlerA.GetAverage(Week) - 10
+            BowlerA.GetAverage(Week - 1) - 10
+
         if BowlerA.GetAverage(Week - 1) >= 0:
-            print(BowlerA.name, BowlerB.name, BowlerB.avgs)
             return (min(BowlerB.GetAverage(Week - 1) - 10, BowlerA.GetAverage(Week - 1) - 10))
         else:
             return (min(BowlerB.GetAverage(Week - 1) - 10, BowlerA.GetAverage(Week) - 10))

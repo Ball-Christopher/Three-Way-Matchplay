@@ -70,7 +70,8 @@ class Bowler:
             #Data.append(sum(sum(v) for k,v in self.hseries.items() if k <= week))
         return(Data)
 
-    def GetStandingsData(self, Count, Type, week):
+    def GetStandingsData(self, Count, Type, week,
+                         path="https://dl.dropboxusercontent.com/u/90265306/Statistics/July%202016/"):
         # Modifications for prebowls, blinds and replaced...
         Points = self.SPoints if Type == 'Scratch' else self.HPoints
         Total_Points = sum(sum(v) for k,v in Points.items() if k <= week)
@@ -93,14 +94,14 @@ class Bowler:
             AvgAgainst = 0
         if Type == 'Scratch':
             return ([Count,
-                     '<a href="http://www.northcitytenpin.co.nz/Data/Sites/1/media/leagues/northcitysingles/april-2016/Stats_{1}.html">{0}</a>'.format(
-                         self.name, '_'.join(self.name.title().split())),
+                     '<a href="{2}Stats_{1}.pdf">{0}</a>'.format(
+                         self.name, '_'.join(self.name.title().split()), path),
                      Total_Points, Last_Points,
                      Avg, High_Game, High_Series, Total_Pins, math.floor(AvgAgainst)])
         else:
             return ([Count,
-                     '<a href="http://www.northcitytenpin.co.nz/Data/Sites/1/media/leagues/northcitysingles/april-2016/Stats_{1}.html">{0}</a>'.format(
-                         self.name, '_'.join(self.name.title().split())),
+                     '<a href={2}Stats_{1}.pdf">{0}</a>'.format(
+                         self.name, '_'.join(self.name.title().split()), path),
                      Total_Points, Last_Points,
                      Avg, Hcp, High_Game, High_Series, Total_Pins])
 

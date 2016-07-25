@@ -5,7 +5,7 @@ from base64 import b64encode
 import pdfkit
 
 
-def Score_Week_Pin_Position(DB, League, Week, Vacant=()):
+def Score_Week_Pin_Position(DB, League, Week, Vacant=(), Calculate=True, Report=True):
     # Add scores from pin position data to league
     for P in DB.Players:
         Sc = [G.FS[-2] for G in P.Games if G.Meta[2].date() == League.dates[Week - 1]]
@@ -18,9 +18,9 @@ def Score_Week_Pin_Position(DB, League, Week, Vacant=()):
         League.BlindCorrection(P, Week)
 
     # Calculate Weekly Scores
-    League.CalculateWeeklyPoints(Week)
+    if Calculate: League.CalculateWeeklyPoints(Week)
     # Print HTML report for the week...
-    League.LaTeXWeekly(Week)
+    if Report: League.LaTeXWeekly(Week)
 
 
 def Brackets_Simulation(League, Week):
@@ -155,70 +155,45 @@ def WriteHTML(g, Data, TableParam, cls='u-full-width', line_skip=3, font_change=
     g.write('</tbody>\n</table>\n')
 
 
-def WritePreambleHTML(g, week, Full=True, Script=False,
+def WritePreambleHTML(g, week, Full=True, Script=False, header=True,
                       Leaguename='', BCenter='', dates=(), lanes=0):
     g.write('<!DOCTYPE html>\n<html lang="en">\n')
-    g.write('<header>\n')
-    g.write('<table style="border-bottom:1pt solid black; width: 100%;">\n')
-    if type(week) == int:
+    if header:
+        g.write('<header>\n')
+        g.write('<table style="border-bottom:1pt solid black; width: 100%;">\n')
+        if type(week) == int:
+            g.write(
+                '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> <h4> {1} </h4> </td> <td style="width:20%"> Week {2} </td> </tr>\n'.format(
+                    custom_strftime('{S} of %B, %Y', dates[week - 1]), Leaguename, week))
+        else:
+            g.write(
+                '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> <h4> {1} </h4> </td> <td style="width:20%"> {2} </td> </tr>\n'.format(
+                    "", Leaguename, ""))
+        g.write('</table>\n<table style="width: 100%;">\n')
         g.write(
-            '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> <h4> {1} </h4> </td> <td style="width:20%"> Week {2} </td> </tr>\n'.format(
-                custom_strftime('{S} of %B, %Y', dates[week - 1]), Leaguename, week))
-    else:
-        g.write(
-            '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> <h4> {1} </h4> </td> <td style="width:20%"> {2} </td> </tr>\n'.format(
-                "", Leaguename, ""))
-    g.write('</table>\n<table style="width: 100%;">\n')
-    g.write(
-        '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> {1} </td> <td style="width:20%"> Lanes 1 -- {2} </td> </tr>\n'.format(
-            dates[0].strftime('6:45pm %A'), BCenter, lanes))
-    g.write('</table></header>')
+            '<tr> <td style="width:20%"> {0} </td> <td style="text-align:center; width=60%"> {1} </td> <td style="width:20%"> Lanes 1 -- {2} </td> </tr>\n'.format(
+                dates[0].strftime('6:45pm %A'), BCenter, lanes))
+        g.write('</table>\n')
+        g.write('</header>\n')
     g.write('<head>\n<meta charset="utf-8">\n')
-    '''
-    This should work for page breaking, however...'''
-    g.write('<style type="text/css" media="screen,print">\n' +
-            '.break{\n' +
-            'display: block;\n' +
-            'clear: both;\n' +
-            'page-break-after: always;}\n</style>\n')
     g.write('<title>{1} Week {0} Recap</title>'.format(week, Leaguename))
     g.write('<meta name="description" content="">\n<meta name="author" content="">\n')
     g.write('<meta name="viewport" content="width=device-width, initial-scale=1">\n')
-    g.write('<link rel="stylesheet" href="css/skeleton.css">\n')
-    if Script:
-        pass
-        '''
-        g.write('<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" type="text/javascript"></script>\n')
-        g.write('<script type="text/javascript">\n')
-        g.write('$(document).ready(function(){\n')
-        g.write('$("#report tr:nth-child(3n+1)").addClass("odd");\n')
-        g.write('$("#report tr:nth-child(3n+2)").addClass("odd");\n')
-        g.write('$("#report tr:not(.odd)").hide();\n')
-        g.write('$("#report tr:first-child").show();\n')
-        g.write('$("#report tr.odd").click(function(){\n')
-        g.write('$(this).next("tr").toggle();\n')
-        g.write('$(this).find(".arrow").toggleClass("up");\n')
-        g.write('});\n')
-        g.write('//$("#report").jExpand();\n')
-        g.write("});\n")
-        g.write("</script>\n")
-        '''
+    g.write('<link rel="stylesheet" href="css/skeletonpdf.css">\n')
     g.write('</head>\n<body>\n')
     if Full:
-        g.write('<div class="container">\n<div class="row">\n<div class="six columns" style="margin-top: 15%">')
         g.write('<h4>{0}</h4>'.format(BCenter))
         g.write('<h4>{0}</h4>'.format(Leaguename))
         g.write('<h4>Week {0}</h4>'.format(week))
         g.write('<h4>{0}</h4>'.format(dates[week - 1].strftime('6:45pm %A %d of %B, %Y')))
-        g.write('</div>\n<div class="six columns" style="margin-top: 15%">\n<h4>On this page</h4>\n')
+        g.write('<h4>On this page</h4>\n')
         g.write('<ol>\n<li><a href="#Standings-Handicap">Standings Handicap</a></li>\n')
         g.write('<li><a href="#Schedule-by-id">Schedule by ID</a></li>\n')
         g.write('<li><a href="#Schedule-by-name">Schedule by Name</a></li>\n')
         g.write('<li><a href="#LWHS">Last Week\'s High Scores</a></li>\n')
         g.write('<li><a href="#SHS">Season High Scores</a></li>\n')
         g.write('<li><a href="#LWBB">Last Week By Bowler</a></li>\n')
-        g.write('</ol>\n</div>\n</div>\n</div>')
-    g.write('<div class="container">\n<div class="row">\n<div class="twelve columns">\n')
+        g.write('</ol>\n')
     pass
 
 
@@ -232,11 +207,11 @@ def Spare_Effectiveness(key, P, debug=False):
         svg_text += '<circle cx="{0}" cy="{1}" r="{2}" fill = "white"></circle>\n'.format(
             X[i - 1], Y[i - 1], 0.7 if i not in key else 0.65)
         if i in key:
-            svg_text += '<text x="{0}" y="{1}" font-size="1"> {2} </text>\n'.format(
+            svg_text += '<text x="{0}" y="{1}" font-size="1" style="font-family: Raleway, san serif; font-weight: 400"> {2} </text>\n'.format(
                 X[i - 1] - (0.3 if i != 10 else 0.55), Y[i - 1] + 0.35, i)
-        svg_text += '<text x="{0}" y="{1}" font-size="0.8"> {2} </text>\n'.format(
+        svg_text += '<text x="{0}" y="{1}" font-size="0.8" style="font-family: Raleway, san serif; font-weight: 300"> {2} </text>\n'.format(
             5.5, 7, str(round(100 * P.Spared[key] / P.Left[key])) + '%')
-        svg_text += '<text x="{0}" y="{1}" font-size="0.8"> {2} </text>\n'.format(
+        svg_text += '<text x="{0}" y="{1}" font-size="0.8" style="font-family: Raleway, san serif; font-weight: 300"> {2} </text>\n'.format(
             0.5, 7, str(P.Spared[key]) + '/' + str(P.Left[key]))
 
     svg_text += '</svg>'
@@ -301,16 +276,14 @@ def Pin_Position_Frame(Frame, G):
     return b64
 
 def HTMLStatistics(DB, League):
-    config = pdfkit.configuration(wkhtmltopdf=bytes(r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe', 'utf-8'))
     path = r'C:\Users\Chris\Documents\League\Three Way\HTML\css\\'
-    css = [path + 'skeleton.css']
     for P in DB.Players:
         # Get the player's first name (assume unique for now)
         F = '_'.join(P.Name.title().split())
         hfile = os.getcwd() + '/HTML/Stats_{0}.html'.format(F)
         h = open(hfile, 'w')
         WritePreambleHTML(h, F, Full=False, Script=False, Leaguename=League.Leaguename,
-                          BCenter=League.BCenter, dates=League.dates, lanes=League.lanes)
+                          BCenter=League.BCenter, dates=League.dates, lanes=League.lanes, header=False)
         Span = [2] * 9
         Span.append(3)
         # Span.extend([3,3])
@@ -324,17 +297,20 @@ def HTMLStatistics(DB, League):
                 continue
             Dates.append(G.Meta[2].date())
         # Add navigation to the page.
-        h.write('<div class="container">\n<div class="row">\n<div class="six columns" style="margin-top: 15%">')
+        h.write(
+            '<div class="container">\n<div class="rTable">\n<div class="rTableRow">\n<div class="rTableCell" width = "50%">\n')
         h.write('<h4>Pin Position Game Stats for {0}</h4>\n'.format(P.Name.title()))
         h.write(
             'Orange background denotes open frames, Red background denotes splits.  Pin position details for each game can be found by clicking on the frame scores.  These results will be progressively improved over the season.')
-        h.write('</div>\n<div class="six columns" style="margin-top: 15%">\n<h4>On this page</h4>\n<ol>\n')
+        h.write('</div>\n<div class="rTableCell" width = "50%">\n')
+        h.write('<h4>On this page</h4>\n<ol>\n')
         h.write('<li><a href="#Comparison">Detailed League Statistics</a></li>\n')
         h.write('<li><a href="#Common">Spare Effectiveness by Combination Left</a></li>\n')
         for Date in Dates:
             h.write('<li><a href="#{0}">{1}{0}</a></li>\n'.format(custom_strftime('{S} of %B, %Y', Date),
                                                                   'Series bowled on '))
-        h.write('</ol>\n</div>\n</div>\n</div>')
+        h.write('</ol>\n')
+        h.write('</div>\n</div>\n</div>\n</div>\n')
         # Section comparing bowler to others
         Head_Comp = ["Name", "Games", "200 Games", "Average", "High Game", "Spare %", "Strike %", "Open %",
                      "Split %", "Splits Converted %", "Single Pins Missed %", "Error %"]
@@ -342,18 +318,20 @@ def HTMLStatistics(DB, League):
         for Pl in DB.Players:
             Text.append(Pl.SummaryStats(1))
         Text.sort(key=lambda key: -key[3])
+        h.write('<div class="container">\n')
         h.write('<h2 id="Comparison">Detailed League Statistics</h2>\n')
-        h.write('Note that only series bowled with the new computer system (installed in Week 2) will be counted here.')
         Comp = {'Names': Head_Comp,
                 'TParams': ['l'] * len(Head_Comp),
                 'HeadFormatB': ['{\\tiny{\\bf '] * len(Head_Comp), 'HeadFormatE': ['}}'] * len(Head_Comp),
                 'Size': -1, 'Guide': True, 'TwoColumn': False}
         WriteHTML(h, Text, Comp, cls='standtable')
+        h.write('</div>\n')
         # Spare effectiveness by combinations
         P.MostCommonLeaves()
         Pairs = sorted(P.Left.items(), key=lambda x: -x[1])
         count = 0
         Cols = 5
+        h.write('<div class="container">\n')
         h.write('<h2 id="Common">Spare Effectiveness by Combination Left</h2>\n')
         h.write('<table class="sparetable" border="1">\n')
         h.write('<tbody>\n')
@@ -374,17 +352,18 @@ def HTMLStatistics(DB, League):
         svg_text += '<rect width="8" height="8" style="fill:rgb(255,255,255);stroke:rgb(255,255,255)" /></svg>'
         encoded_string = b64encode(svg_text.encode('utf-8'))
         b64 = encoded_string.decode('utf-8')
-        for x in range(count % 5, 5):
+        for x in range(count, 5):
             h.write('<td> <p><img width = "100%" alt="" src="data:image/svg+xml;base64,' +
                     b64 + '" /></p></td>')
             # h.write('<td> <p><img width = "100%" alt="" /></p> </td>\n')
         h.write('</tbody>\n</table>\n')
+        h.write('</div>\n')
         # Section outputting frame-by-frame
         for G in P.Games:
             if G.Meta[2].date() != LastDate:
                 if LastDate != '':
-                    h.write('</tbody>\n</table>\n')
-                h.write('<div class="break"></div>')
+                    h.write('</tbody>\n</table>\n</div>\n')
+                h.write('<div class="container">\n')
                 h.write(
                     '<h2 id="{0}">Frame-by-frame {0}</h2>'.format(custom_strftime('{S} of %B, %Y', G.Meta[2].date())))
                 h.write('<table class="frametable" border="1" id="report">\n<thead>\n')
@@ -393,6 +372,12 @@ def HTMLStatistics(DB, League):
                 h.write('</thead>\n<tbody>')
                 h.write('<tr>\n')
                 LastDate = G.Meta[2].date()
+            else:
+                h.write('<table class="frametable" border="1" id="report">\n<thead>\n')
+                for i, j in zip(Span, Head):
+                    h.write('<th colspan = "{0}"><center>{1}</center></th>\n'.format(i, j))
+                h.write('</thead>\n<tbody>')
+                h.write('<tr>\n')
             # style="background-color: rgba(255,0,0,0.5)
             for i, j in enumerate(G.NormalScore):
                 # Correction for 10th frames...
@@ -425,14 +410,16 @@ def HTMLStatistics(DB, League):
                 h.write('<p><img width = "100%" alt="" src="data:image/svg+xml;base64,' +
                         Pin_Position_Frame(Frame, G) + '" /></p>')
                 h.write('</center></td>')
-            h.write('</tr>\n')
-        h.write('</tbody>\n</table>\n')
-        h.write('</div>\n</div>\n</div>\n</body>\n</html>')
+            h.write('</tr>\n</tbody>\n</table>\n')
+        h.write('</tbody>\n</table>\n</div>\n')
+        h.write('</body>\n</html>')
         h.close()
-        options = {'margin-top': '0in',
+        options = {'margin-top': '0.75in',
                    'margin-right': '0in',
                    'margin-bottom': '0in',
                    'margin-left': '0in',
-                   'footer-right': '[page]'}
-        pdfkit.from_file(hfile, os.getcwd() + r'\HTML\Stats_{0}.pdf'.format(F), configuration=config, css=css,
-                         options=options)
+                   'header-html': r'C:\Users\Chris\Documents\League\Three Way\HTML\testhead.html'}
+        config = pdfkit.configuration(wkhtmltopdf=bytes(r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe', 'utf-8'))
+        css = [path + 'skeletonpdf.css']
+        pdfkit.from_file(hfile, os.getcwd() + r'\HTML\Stats_{0}.pdf'.format(F),
+                         configuration=config, css=css, options=options)
