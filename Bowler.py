@@ -100,7 +100,7 @@ class Bowler:
                      Avg, High_Game, High_Series, Total_Pins, math.floor(AvgAgainst)])
         else:
             return ([Count,
-                     '<a href={2}Stats_{1}.pdf">{0}</a>'.format(
+                     '<a href="{2}Stats_{1}.pdf">{0}</a>'.format(
                          self.name, '_'.join(self.name.title().split()), path),
                      Total_Points, Last_Points,
                      Avg, Hcp, High_Game, High_Series, Total_Pins])

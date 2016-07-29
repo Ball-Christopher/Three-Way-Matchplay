@@ -5,7 +5,7 @@ from base64 import b64encode
 import pdfkit
 
 
-def Score_Week_Pin_Position(DB, League, Week, Vacant=(), Calculate=True, Report=True):
+def Score_Week_Pin_Position(DB, League, Week, Vacant=(), Prebowl=(), Calculate=True, Report=True):
     # Add scores from pin position data to league
     for P in DB.Players:
         Sc = [G.FS[-2] for G in P.Games if G.Meta[2].date() == League.dates[Week - 1]]
@@ -17,6 +17,8 @@ def Score_Week_Pin_Position(DB, League, Week, Vacant=(), Calculate=True, Report=
     for P in Vacant:
         League.BlindCorrection(P, Week)
 
+    for P in Prebowl:
+        League.Prebowl(P, Week)
     # Calculate Weekly Scores
     if Calculate: League.CalculateWeeklyPoints(Week)
     # Print HTML report for the week...
@@ -90,6 +92,7 @@ def Brackets(League, Week):
 
     OUT.append([[S[4], N] for S, N in zip(Scores, Names)])
     return (OUT)
+
 
 def suffix(d):
     return 'th' if 11 <= d <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(d % 10, 'th')
@@ -274,6 +277,7 @@ def Pin_Position_Frame(Frame, G):
     b64 = encoded_string.decode('utf-8')
 
     return b64
+
 
 def HTMLStatistics(DB, League):
     path = r'C:\Users\Chris\Documents\League\Three Way\HTML\css\\'

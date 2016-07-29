@@ -39,12 +39,19 @@ class League:
                         if B1 == B2: continue
                         self.CompareBowler(week, B1 - 1, B2 - 1, Type)
 
-    def BlindCorrection(self,BowlerName,Week):
+    def BlindCorrection(self, BowlerName, Week):
         #Update mappings
         self.NameToLocationMap()
         #Find bowler and assign blind.
         Bowler = self.League[self.NameLocationMap[BowlerName.lower()]]
         Bowler.Blind(Week)
+
+    def Prebowl(self, BowlerName, Week):
+        # Update mappings
+        self.NameToLocationMap()
+        # Find bowler and assign blind.
+        Bowler = self.League[self.NameLocationMap[BowlerName.lower()]]
+        Bowler.PreBowl(Week)
 
     def BlindRule(self, BowlerA, BowlerB, Week, Handicap = True):
         ''' Bowler A is the active player, Bowler B is blind'''
@@ -124,12 +131,20 @@ class League:
 
     def Awards(self,Type,week):
         WeeklyHighG = [[Member.dispname, max(Member.GetSeriesType(week, Type))]
-                       for Member in self.League if Member.name not in self.Exclude and week in Member.Games.keys()]
-        SeasonHighG = [[Member.dispname, max(max(Member.GetSeriesType(i, Type)) for i in range(1, week + 1))]
+                       for Member in self.League if Member.name not in self.Exclude and
+                       week in Member.Games.keys() and
+                       not Member.IsPreBowl(week)]
+        SeasonHighG = [[Member.dispname, max([max(Member.GetSeriesType(i, Type))
+                                              for i in range(1, week + 1)
+                                              if not Member.IsPreBowl(i)], default=0)]
                        for Member in self.League if Member.name not in self.Exclude]
         WeeklyHighS = [[Member.dispname, sum(Member.GetSeriesType(week, Type))]
-                       for Member in self.League if Member.name not in self.Exclude and week in Member.Games.keys()]
-        SeasonHighS = [[Member.dispname, max(sum(Member.GetSeriesType(i, Type)) for i in range(1, week + 1))]
+                       for Member in self.League if Member.name not in self.Exclude and
+                       week in Member.Games.keys() and
+                       not Member.IsPreBowl(week)]
+        SeasonHighS = [[Member.dispname, max([sum(Member.GetSeriesType(i, Type))
+                                              for i in range(1, week + 1)
+                                              if not Member.IsPreBowl(i)], default=0)]
                        for Member in self.League if Member.name not in self.Exclude]
         #  Extract to a data matrix that can be LaTeX'd
         DataSSG = self.SortByGroup(SeasonHighG, Type + ' Game')
@@ -346,6 +361,7 @@ class League:
                 else:
                     SchedData[Count].extend(['--'.join(str(j) for j in CurrentWeek[i:(i + self.Pattern[week - 1])])])
                 LaneCount += 2
+
         return(SchedData)
 
     def CompileHigh(self,Data,Title):
