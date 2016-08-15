@@ -4,6 +4,12 @@ from base64 import b64encode
 
 import pdfkit
 
+'''
+Note on changing fonts in output:
+Must be changed in the css argument for wkhtmltopdf, the image generation of spare combinations
+and the css file.  May look at automating this to remove error.  Further changes are needed
+if you are planning to change the header or the weekly recap.
+'''
 
 def Score_Week_Pin_Position(DB, League, Week, Vacant=(), Prebowl=(), Calculate=True, Report=True):
     # Add scores from pin position data to league
@@ -182,7 +188,7 @@ def WritePreambleHTML(g, week, Full=True, Script=False, header=True,
     g.write('<title>{1} Week {0} Recap</title>'.format(week, Leaguename))
     g.write('<meta name="description" content="">\n<meta name="author" content="">\n')
     g.write('<meta name="viewport" content="width=device-width, initial-scale=1">\n')
-    g.write('<link rel="stylesheet" href="css/skeletonpdf.css">\n')
+    g.write('<link rel="stylesheet" href="css/skeletonpdfv2.css">\n')
     g.write('</head>\n<body>\n')
     if Full:
         g.write('<h4>{0}</h4>'.format(BCenter))
@@ -210,11 +216,11 @@ def Spare_Effectiveness(key, P, debug=False):
         svg_text += '<circle cx="{0}" cy="{1}" r="{2}" fill = "white"></circle>\n'.format(
             X[i - 1], Y[i - 1], 0.7 if i not in key else 0.65)
         if i in key:
-            svg_text += '<text x="{0}" y="{1}" font-size="1" style="font-family: Raleway, san serif; font-weight: 400"> {2} </text>\n'.format(
+            svg_text += '<text x="{0}" y="{1}" font-size="1" style="font-family: AnonymousPro, san serif; font-weight: 400"> {2} </text>\n'.format(
                 X[i - 1] - (0.3 if i != 10 else 0.55), Y[i - 1] + 0.35, i)
-        svg_text += '<text x="{0}" y="{1}" font-size="0.8" style="font-family: Raleway, san serif; font-weight: 300"> {2} </text>\n'.format(
+        svg_text += '<text x="{0}" y="{1}" font-size="0.8" style="font-family: AnonymousPro, san serif; font-weight: 300"> {2} </text>\n'.format(
             5.5, 7, str(round(100 * P.Spared[key] / P.Left[key])) + '%')
-        svg_text += '<text x="{0}" y="{1}" font-size="0.8" style="font-family: Raleway, san serif; font-weight: 300"> {2} </text>\n'.format(
+        svg_text += '<text x="{0}" y="{1}" font-size="0.8" style="font-family: AnonymousPro, serif; font-weight: 300"> {2} </text>\n'.format(
             0.5, 7, str(P.Spared[key]) + '/' + str(P.Left[key]))
 
     svg_text += '</svg>'
@@ -418,12 +424,12 @@ def HTMLStatistics(DB, League):
         h.write('</tbody>\n</table>\n</div>\n')
         h.write('</body>\n</html>')
         h.close()
-        options = {'margin-top': '0.75in',
+        options = {'margin-top': '0.5in',
                    'margin-right': '0in',
-                   'margin-bottom': '0in',
+                   'margin-bottom': '0.2in',
                    'margin-left': '0in',
                    'header-html': r'C:\Users\Chris\Documents\League\Three Way\HTML\testhead.html'}
         config = pdfkit.configuration(wkhtmltopdf=bytes(r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe', 'utf-8'))
-        css = [path + 'skeletonpdf.css']
+        css = [path + 'skeletonpdfv2.css']
         pdfkit.from_file(hfile, os.getcwd() + r'\HTML\Stats_{0}.pdf'.format(F),
                          configuration=config, css=css, options=options)

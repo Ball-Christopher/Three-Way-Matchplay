@@ -234,41 +234,41 @@ class League:
             h = open(hfile, 'w')
         #Write header to document if appropriate
         WritePreambleHTML(g, week, Full=False, Leaguename=self.Leaguename,
-                          BCenter=self.BCenter, dates=self.dates, lanes=self.lanes)
+                          BCenter=self.BCenter, dates=self.dates, lanes=self.lanes, header = False)
         WritePreambleHTML(h, week, Full=False, Leaguename=self.Leaguename,
-                          BCenter=self.BCenter, dates=self.dates, lanes=self.lanes)
+                          BCenter=self.BCenter, dates=self.dates, lanes=self.lanes, header = False)
         #Write end of document if appropriate
         Bowlers = self.Pattern[week - 1]
-        h.write('<h2 id="Standings-Scratch">Standings Scratch</h2>\n')
+        h.write('<div class="container">\n<h2 id="Standings-Scratch">Standings Scratch</h2>\n')
         WriteHTML(h, Scratch, self.StScP, cls='standtable')
-        g.write('<h2 id="Standings-Handicap">Standings Handicap</h2>\n')
+        h.write('</div>')
+        g.write('<div class="container">\n<h2 id="Standings-Handicap">Standings Handicap</h2>\n')
         WriteHTML(g, Handicap, self.StHcP, cls='standtable')
-        # g.write('<h2  id="Schedule-by-id">Schedule by ID</h2>\n')
-        # self.WriteHTML(g, SchedDataNum, self.SchedNumP, cls = 'idtable')
-        # h.write('<h2  id="Schedule-by-id">Schedule by ID</h2>\n')
-        # self.WriteHTML(h, SchedDataNum, self.SchedNumP, cls = 'idtable')
+        g.write('</div>')
         if self.byname:
-            g.write('<h2  id="Schedule-by-name">Schedule by Name</h2>\n')
+            g.write('<div class="container">\n<h2 id="Schedule-by-name">Schedule by Name</h2>\n')
             WriteHTML(g, SchedDataNam, self.SchedNamP, cls='boldtable')
-            h.write('<h2  id="Schedule-by-name">Schedule by Name</h2>\n')
+            g.write('</div>')
+            h.write('<div class="container">\n<h2 id="Schedule-by-name">Schedule by Name</h2>\n')
             WriteHTML(h, SchedDataNam, self.SchedNamP, cls='boldtable')
+            h.write('</div>')
         if self.handicap:
-            g.write('<h2 id="LWHS">Last Week\'s Individual High Scores</h2>\n')
+            g.write('<div class="container">\n<h2 id="LWHS">Last Week\'s Individual High Scores</h2>\n')
             WriteHTML(g, IDataHG, self.High, cls='idtable')
-            g.write('<h2 id="SHS">Season Individual High Scores</h2>\n')
+            g.write('</div>')
+            g.write('<div class="container">\n<h2 id="SHS">Season Individual High Scores</h2>\n')
             WriteHTML(g, IDataHS, self.High, cls='idtable')
+            g.write('</div>')
         if self.scratch:
-            h.write('<h2 id="LWSS">Last Week\'s Individual High Scores</h2>\n')
+            h.write('<div class="container">\n<h2 id="LWSS">Last Week\'s Individual High Scores</h2>\n')
             WriteHTML(h, IDataSG, self.High, cls='idtable')
-            h.write('<h2 id="SSS">Season Individual High Scores</h2>\n')
+            h.write('</div>')
+            h.write('<div class="container">\n<h2 id="SSS">Season Individual High Scores</h2>\n')
             WriteHTML(h, IDataSS, self.High, cls='idtable')
+            h.write('</div>')
             pass
-        g.write('<div style="page-break-inside:avoid;">')
-        h.write('<div style="page-break-inside:avoid;">')
-        self.AddHeader(g, week)
-        self.AddHeader(h, week)
-        g.write('<h2 id="LWBB">Last Week By Bowler</h2>\n')
-        h.write('<h2 id="LWBB">Last Week By Bowler</h2>\n')
+        g.write('<div class="container">\n<h2 id="LWBB">Last Week By Bowler</h2>\n')
+        h.write('<div class="container">\n<h2 id="LWBB">Last Week By Bowler</h2>\n')
         # Some basic cleaning before HTML processing
         BowlersH = [row for row in BowlersDataHandicap if len(row) > 1]
         for i, row in enumerate(BowlersH): row.insert(0, '' if i % self.Pattern[week - 1] != 0 else '{0}--{1}'.format(
@@ -280,20 +280,20 @@ class League:
         WriteHTML(h, BowlersS, self.WRecap, cls='maintable', line_skip=Bowlers, font_change=(Bowlers == 3))
         g.write('</div>')
         h.write('</div>')
-        h.write('</div>\n</div>\n</div>\n</body>\n</html>')
+        h.write('</body>\n</html>')
         h.close()
-        g.write('</div>\n</div>\n</div>\n</body>\n</html>')
+        g.write('</body>\n</html>')
         g.close()
         # Convert to pdf
         # Configure the html to pdf software.
         config = pdfkit.configuration(wkhtmltopdf=bytes(r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe', 'utf-8'))
         path = r'C:\Users\Chris\Documents\League\Three Way\HTML\css\\'
         css = [path + 'skeletonpdf.css']
-        options = {'margin-top': '0in',
+        options = {'margin-top': '0.5in',
                    'margin-right': '0in',
-                   'margin-bottom': '0in',
+                   'margin-bottom': '0.2in',
                    'margin-left': '0in',
-                   'footer-right': '[page]'}
+                   'header-html': r'C:\Users\Chris\Documents\League\Three Way\HTML\testhead.html'}
         pdfkit.from_file(gfile, os.getcwd()+r'\HTML\Week{0}RecapHandicap.pdf'.format(week),
                          configuration = config, css = css, options = options)
         pdfkit.from_file(hfile, os.getcwd()+r'\HTML\Week{0}RecapScratch.pdf'.format(week),
@@ -320,8 +320,7 @@ class League:
         options = {'margin-top': '0in',
                    'margin-right': '0in',
                    'margin-bottom': '0in',
-                   'margin-left': '0in',
-                   'footer-right': '[page]'}
+                   'margin-left': '0in'}
         pdfkit.from_file(gfile, os.getcwd()+r'\HTML\Schedule.pdf',
                          configuration = config, css = css, options = options)
 

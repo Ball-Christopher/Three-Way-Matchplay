@@ -102,8 +102,8 @@ class Database:
                     P = self.Players[-1]
                 L = int(row[1].split()[1])
                 G = int(row[2].split()[1])
-                Start = row[3] if not NewDate else row[3] + NewDate
-                End = row[3] if not NewDate else row[3] + NewDate
+                Start = row[3] if not NewDate else row[3].replace(NewDate[0], NewDate[1], NewDate[2])
+                End = row[3] if not NewDate else row[3].replace(NewDate[0], NewDate[1], NewDate[2])
                 continue
             elif ByGame:
                 if HCAP and count < 4:

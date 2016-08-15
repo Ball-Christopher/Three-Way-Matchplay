@@ -106,6 +106,14 @@ DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_2_Postbowl
 DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_2_Postbowl_2.xls', Map,
               NewDate=(2016, 7, 27))
 
+DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_3.xls', Map)
+DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_3_Prebowl.xls', Map,
+              NewDate=(2016, 8, 3))
+
+DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_4.xls', Map)
+Map_4 = {'STEPH':'Stephanie George'}
+DB.ImportFile(r'C:\Users\Chris\Documents\League\Three Way\Source\Week_4_Postbowl_1.xls', Map_4,
+              NewDate=(2016, 8, 10), ByGame = True)
 
 DB.LaneInfo()
 
@@ -141,6 +149,26 @@ New_League.CalculateWeeklyPoints(2)
 # Print HTML report for the week...
 New_League.LaTeXWeekly(2)
 
+Week = 3
+Score_Week_Pin_Position(DB, New_League, Week,
+                        Vacant=('Roger', 'Alysha', 'Steph', 'Vacant 1', 'Vacant 2'),
+                        Prebowl = ('Shane D',))
+
+Week = 4
+Score_Week_Pin_Position(DB, New_League, Week,
+                        Vacant=('Alysha', 'Vacant 1', 'Vacant 2'),
+                        Prebowl = ('Chris H', 'Ash', 'Roger', 'Dayna'),
+                        Calculate=False, Report=False)
+
+New_League.AddSeries('Ash', 4, 146, 109, 140, 166, 193, 119)
+New_League.AddSeries('Dayna', 4, 210, 191, 192, 151, 157, 184)
+New_League.AddSeries('Roger', 4, 165, 191, 214, 189, 188, 168)
+#New_League.AddSeries('Steph', 4, 175, 174, 132, 147, 125, 149)
+# Calculate Weekly Scores
+New_League.CalculateWeeklyPoints(4)
+
+# Print HTML report for the week...
+New_League.LaTeXWeekly(4)
 # Print the schedule
 New_League.CompleteSchedule()
 
